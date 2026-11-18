@@ -1,8 +1,9 @@
 "use client";
 
-import { LayoutDashboard } from "lucide-react";
+import { Building2, LayoutDashboard } from "lucide-react";
 import Link from "next/link";
 import { useCurrentUser } from "@/components/current-user-provider";
+import BusinessSwitcherMenu from "@/components/layout/business-switcher-menu";
 import SettingsMenu from "@/components/layout/settings-menu";
 import UserProfile from "@/components/layout/user-profile";
 import UserSimulationMenu from "@/components/layout/user-simulation-menu";
@@ -10,7 +11,7 @@ import { IS_USER_SIMULATION_ENABLED } from "@/constants/feature-flags";
 import { cn } from "@/lib/utils";
 
 export default function AppHeader() {
-  const { isSimulatingUser } = useCurrentUser();
+  const { isSimulatingUser, currentBusiness } = useCurrentUser();
 
   return (
     <header
@@ -29,7 +30,17 @@ export default function AppHeader() {
       </Link>
 
       <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-        {/* Build-time constant, so production bundles drop the menu entirely. */}
+        {/* Build-time constant, so production never shows these development menus. */}
+        <span data-tour="business" className="flex">
+          {IS_USER_SIMULATION_ENABLED ? (
+            <BusinessSwitcherMenu />
+          ) : (
+            <span className="hidden items-center gap-1.5 text-xs font-medium text-muted-foreground sm:flex">
+              <Building2 aria-hidden className="size-3.5" />
+              {currentBusiness.shortName}
+            </span>
+          )}
+        </span>
         {IS_USER_SIMULATION_ENABLED && <UserSimulationMenu />}
         <UserProfile />
         <SettingsMenu />

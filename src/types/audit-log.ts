@@ -6,6 +6,7 @@ export type KanbanAuditLogAction =
   | "owner-changed"
   | "archived"
   | "daily-update"
+  | "update"
   | "attached"
   | "attachment-removed";
 
@@ -13,6 +14,7 @@ export type KanbanAuditLogAction =
 export type KanbanAuditLogEntry = {
   readonly id: string;
   readonly taskId: string;
+  readonly businessId: string;
   readonly taskTitle: string;
   readonly action: KanbanAuditLogAction;
   readonly actorName: string;

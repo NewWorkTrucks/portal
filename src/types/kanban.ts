@@ -40,6 +40,8 @@ export type KanbanColumnDefinition = {
 
 export type KanbanTask = {
   id: string;
+  /** The business this card belongs to; never shown outside it (E4-2). */
+  businessId: string;
   title: string;
   description: string;
   status: KanbanStatus;
@@ -99,6 +101,7 @@ export type KanbanPendingNoteOperation =
       tasksBeforeMove: KanbanTasksByStatus | null;
     }
   | { kind: "daily-update"; task: KanbanTask }
+  | { kind: "add-update"; task: KanbanTask }
   | { kind: "change-owner"; task: KanbanTask; newOwnerName: string }
   | { kind: "archive"; task: KanbanTask }
   | { kind: "attach-files"; task: KanbanTask; files: File[] }
@@ -117,6 +120,8 @@ export type KanbanTaskActions = {
   onClickArchive: (task: KanbanTask) => void;
   onSelectOwner: (task: KanbanTask, ownerName: string) => void;
   onClickDailyUpdate: (task: KanbanTask) => void;
+  /** A progress note or comment on a card in any stage, without changing it. */
+  onClickAddUpdate: (task: KanbanTask) => void;
   /** Reviewer actions for cards in Needs Review (E2-5). */
   onClickApprove: (task: KanbanTask) => void;
   onClickReturn: (task: KanbanTask) => void;
@@ -127,7 +132,10 @@ export type KanbanTaskActions = {
 export type KanbanBoardContextValue = {
   teamMembers: TeamMember[];
   mentionables: Mentionable[];
+  /** Cards of the current business only. */
   tasksByStatus: KanbanTasksByStatus;
+  /** Every business's cards. Only for drag snapshots, so restoring one never drops other businesses' cards. */
+  allTasksByStatus: KanbanTasksByStatus;
   archivedTasks: ArchivedKanbanTask[];
   auditLogEntries: readonly KanbanAuditLogEntry[];
   /** Live drag preview only. Committed changes go through the actions below so they are logged. */
@@ -147,6 +155,7 @@ export type KanbanBoardContextValue = {
     transition: KanbanStageTransition,
   ) => Promise<void>;
   postDailyUpdate: (task: KanbanTask, dailyUpdate: KanbanDailyUpdate) => Promise<void>;
+  addTaskUpdate: (task: KanbanTask, note: string) => Promise<void>;
   attachFiles: (task: KanbanTask, files: File[], note: string) => Promise<void>;
   removeAttachment: (task: KanbanTask, attachment: KanbanAttachment, note: string) => Promise<void>;
   /** What the current user may do with a card, based on their role and ownership (E4-1). */

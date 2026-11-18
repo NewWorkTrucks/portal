@@ -1,3 +1,4 @@
+import type { Business } from "@/types/business";
 import type { TeamMember } from "@/types/team";
 
 export type CurrentUserContextValue = {
@@ -9,4 +10,10 @@ export type CurrentUserContextValue = {
   isSimulatingUser: boolean;
   /** Pass the signed-in user's id (or null) to stop viewing as someone else. */
   simulateUser: (teamMemberId: string | null) => void;
+  /** Businesses the current user belongs to. */
+  availableBusinesses: Business[];
+  /** The business whose data the app shows; always one the current user belongs to (E4-2). */
+  currentBusiness: Business;
+  /** Development only: switch which business we are viewing. */
+  selectBusiness: (businessId: string) => void;
 };

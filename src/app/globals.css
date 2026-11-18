@@ -117,6 +117,81 @@
   --sidebar-ring: oklch(0.56 0.021 213.5);
 }
 
+/*
+ * Accent colors (Settings → Appearance). Emerald is the default in :root and .dark above.
+ * Each accent overrides the primary tokens for light and dark; these selectors are more
+ * specific than :root and .dark, so they win in either mode.
+ */
+:root[data-accent="blue"] {
+  --primary: oklch(0.546 0.245 262.881);
+  --primary-foreground: oklch(0.97 0.014 254.604);
+  --sidebar-primary: oklch(0.623 0.214 259.815);
+  --sidebar-primary-foreground: oklch(0.97 0.014 254.604);
+}
+
+:root.dark[data-accent="blue"] {
+  --primary: oklch(0.488 0.243 264.376);
+  --primary-foreground: oklch(0.97 0.014 254.604);
+  --sidebar-primary: oklch(0.707 0.165 254.624);
+  --sidebar-primary-foreground: oklch(0.282 0.091 267.935);
+}
+
+:root[data-accent="violet"] {
+  --primary: oklch(0.541 0.281 293.009);
+  --primary-foreground: oklch(0.969 0.016 293.756);
+  --sidebar-primary: oklch(0.606 0.25 292.717);
+  --sidebar-primary-foreground: oklch(0.969 0.016 293.756);
+}
+
+:root.dark[data-accent="violet"] {
+  --primary: oklch(0.491 0.27 292.581);
+  --primary-foreground: oklch(0.969 0.016 293.756);
+  --sidebar-primary: oklch(0.702 0.183 293.541);
+  --sidebar-primary-foreground: oklch(0.283 0.141 291.089);
+}
+
+:root[data-accent="rose"] {
+  --primary: oklch(0.586 0.253 17.585);
+  --primary-foreground: oklch(0.969 0.015 12.422);
+  --sidebar-primary: oklch(0.645 0.246 16.439);
+  --sidebar-primary-foreground: oklch(0.969 0.015 12.422);
+}
+
+:root.dark[data-accent="rose"] {
+  --primary: oklch(0.514 0.222 16.935);
+  --primary-foreground: oklch(0.969 0.015 12.422);
+  --sidebar-primary: oklch(0.712 0.194 13.428);
+  --sidebar-primary-foreground: oklch(0.271 0.105 12.094);
+}
+
+:root[data-accent="orange"] {
+  --primary: oklch(0.553 0.195 38.402);
+  --primary-foreground: oklch(0.98 0.016 73.684);
+  --sidebar-primary: oklch(0.646 0.222 41.116);
+  --sidebar-primary-foreground: oklch(0.98 0.016 73.684);
+}
+
+:root.dark[data-accent="orange"] {
+  --primary: oklch(0.47 0.157 37.304);
+  --primary-foreground: oklch(0.98 0.016 73.684);
+  --sidebar-primary: oklch(0.75 0.183 55.934);
+  --sidebar-primary-foreground: oklch(0.266 0.079 36.259);
+}
+
+:root[data-accent="slate"] {
+  --primary: oklch(0.279 0.041 260.031);
+  --primary-foreground: oklch(0.984 0.003 247.858);
+  --sidebar-primary: oklch(0.372 0.044 257.287);
+  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
+}
+
+:root.dark[data-accent="slate"] {
+  --primary: oklch(0.929 0.013 255.508);
+  --primary-foreground: oklch(0.208 0.042 265.755);
+  --sidebar-primary: oklch(0.869 0.022 252.894);
+  --sidebar-primary-foreground: oklch(0.208 0.042 265.755);
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -130,4 +205,97 @@
   html {
     @apply font-sans;
   }
+}
+/*
+ * Onboarding tour (driver.js, E5-2), matched to the app's theme tokens so it follows
+ * light/dark mode and the accent color.
+ */
+.ffl-tour-popover.driver-popover {
+  max-width: 340px;
+  border-radius: var(--radius-lg);
+  background-color: var(--popover);
+  color: var(--popover-foreground);
+  box-shadow: 0 10px 30px oklch(0 0 0 / 25%);
+  outline: 1px solid var(--border);
+  font-family: var(--font-sans);
+}
+
+.ffl-tour-popover .driver-popover-title {
+  font-family: var(--font-heading);
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.ffl-tour-popover .driver-popover-description {
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--muted-foreground);
+}
+
+.ffl-tour-popover .driver-popover-progress-text {
+  font-size: 0.7rem;
+  color: var(--muted-foreground);
+}
+
+.ffl-tour-popover .driver-popover-close-btn {
+  color: var(--muted-foreground);
+}
+
+.ffl-tour-popover .driver-popover-close-btn:hover,
+.ffl-tour-popover .driver-popover-close-btn:focus-visible {
+  color: var(--foreground);
+}
+
+.ffl-tour-popover .driver-popover-footer {
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.ffl-tour-popover .driver-popover-footer button {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background-color: var(--background);
+  color: var(--foreground);
+  font-size: 0.75rem;
+  padding: 0.3rem 0.65rem;
+  text-shadow: none;
+}
+
+.ffl-tour-popover .driver-popover-footer .driver-popover-next-btn {
+  border-color: var(--primary);
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.ffl-tour-popover .driver-popover-footer button:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 1px;
+}
+
+.ffl-tour-popover .driver-popover-footer .ffl-tour-dismiss-button {
+  margin-right: auto;
+  border-color: transparent;
+  background-color: transparent;
+  color: var(--muted-foreground);
+}
+
+.ffl-tour-popover .driver-popover-footer .ffl-tour-dismiss-button:hover {
+  color: var(--foreground);
+  text-decoration: underline;
+}
+
+.ffl-tour-popover .driver-popover-arrow-side-left {
+  border-color: transparent transparent transparent var(--popover);
+}
+
+.ffl-tour-popover .driver-popover-arrow-side-right {
+  border-color: transparent var(--popover) transparent transparent;
+}
+
+.ffl-tour-popover .driver-popover-arrow-side-top {
+  border-color: var(--popover) transparent transparent transparent;
+}
+
+.ffl-tour-popover .driver-popover-arrow-side-bottom {
+  border-color: transparent transparent var(--popover) transparent;
 }

@@ -5,4 +5,6 @@ export type TeamMember = {
   name: string;
   jobTitle: string;
   role: PortalRole;
+  /** Businesses this person can see and work in (E4-2). */
+  businessIds: string[];
 };

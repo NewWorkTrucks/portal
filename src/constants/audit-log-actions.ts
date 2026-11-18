@@ -3,6 +3,7 @@ import {
   ArrowRightLeft,
   ClipboardCheck,
   FileMinus,
+  MessageSquarePlus,
   Paperclip,
   type LucideIcon,
   Pencil,
@@ -23,6 +24,7 @@ export const AUDIT_LOG_ACTION_DISPLAY: Record<
   "owner-changed": { label: "Owner changed", Icon: UserRoundPen },
   archived: { label: "Archived", Icon: Archive },
   "daily-update": { label: "Daily update", Icon: ClipboardCheck },
+  update: { label: "Update", Icon: MessageSquarePlus },
   attached: { label: "Attached files", Icon: Paperclip },
   "attachment-removed": { label: "Removed file", Icon: FileMinus },
 };

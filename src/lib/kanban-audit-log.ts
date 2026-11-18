@@ -1,12 +1,18 @@
 import { KANBAN_TASK_PRIORITY_OPTIONS } from "@/constants/kanban-task-priorities";
+import { WORKDAY_TIME_ZONE } from "@/constants/time-zone";
 import { formatEstimatedTurnaround, formatKanbanDate } from "@/lib/kanban";
 import type { KanbanAuditLogAction, KanbanAuditLogEntry } from "@/types/audit-log";
 import type { KanbanTask, KanbanTaskEditableFields } from "@/types/kanban";
 
-// TODO: Confirm the reporting time zone (PH or US Central is an open question). Shows viewer-local time for now.
+// Shown in the workday time zone with its label (CST/CDT), so everyone reads the same time.
 const AUDIT_LOG_TIMESTAMP_FORMATTER = new Intl.DateTimeFormat("en-US", {
-  dateStyle: "medium",
-  timeStyle: "medium",
+  timeZone: WORKDAY_TIME_ZONE,
+  month: "short",
+  day: "numeric",
+  year: "numeric",
+  hour: "numeric",
+  minute: "2-digit",
+  timeZoneName: "short",
 });
 
 export function formatAuditLogTimestamp(isoTimestamp: string): string {
@@ -59,7 +65,7 @@ export function describeTaskEdits(task: KanbanTask, editedFields: KanbanTaskEdit
 }
 
 export function createAuditLogEntry(
-  task: Pick<KanbanTask, "id" | "title">,
+  task: Pick<KanbanTask, "id" | "title" | "businessId">,
   action: KanbanAuditLogAction,
   actor: { actorName: string; simulatedByName?: string },
   summary: string,
@@ -69,6 +75,7 @@ export function createAuditLogEntry(
   return Object.freeze({
     id: crypto.randomUUID(),
     taskId: task.id,
+    businessId: task.businessId,
     taskTitle: task.title,
     action,
     actorName: actor.actorName,

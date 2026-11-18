@@ -30,6 +30,8 @@ export type KanbanTaskPermissions = {
   canPostDailyUpdate: boolean;
   /** Approve or return a card in Needs Review (E2-5). Reviewers can't review their own work. */
   canReview: boolean;
+  /** Post an update or comment on a card in any stage. Anyone in the card's business can. */
+  canAddUpdate: boolean;
   /** Add or remove attachments (E1-4). */
   canManageAttachments: boolean;
 };
