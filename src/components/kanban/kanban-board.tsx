@@ -81,6 +81,7 @@ export default function KanbanBoard() {
     changeTaskOwner,
     archiveTask,
     transitionTask,
+    reorderTask,
     postDailyUpdate,
     addTaskUpdate,
     attachFiles,
@@ -246,6 +247,17 @@ export default function KanbanBoard() {
 
     if (over) {
       const overId = String(over.id);
+      const overStatus = findStatusOfDraggable(tasksByStatus, overId);
+      const activeStatus = findStatusOfDraggable(tasksByStatus, activeId);
+
+      // A reorder within the starting column isn't a status change; save the new order only.
+      if (activeStatus && activeStatus === overStatus && activeStatus === previousStatus && activeId !== overId) {
+        const reorderedTasksByStatus = reorderTaskWithinStatus(tasksByStatus, activeStatus, activeId, overId);
+        void reorderTask(
+          activeId,
+          reorderedTasksByStatus[activeStatus].map((task) => task.id),
+        );
+      }
 
       setTasksByStatus((previousTasksByStatus) => {
         const activeStatus = findStatusOfDraggable(previousTasksByStatus, activeId);

@@ -13,7 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-/** Development-only menu for switching which business's data we are viewing (E4-2 mock). */
+/** Switches which business's data we are viewing (E4-2). Development-only in mock mode. */
 export default function BusinessSwitcherMenu() {
   const { availableBusinesses, currentBusiness, currentUser, selectBusiness } = useCurrentUser();
 
@@ -28,7 +28,7 @@ export default function BusinessSwitcherMenu() {
       <DropdownMenuContent align="end" className="w-64">
         <DropdownMenuGroup>
           <DropdownMenuLabel>
-            {currentUser.name}&rsquo;s businesses (development only)
+            {currentUser.name}&rsquo;s businesses
           </DropdownMenuLabel>
           <DropdownMenuRadioGroup
             value={currentBusiness.id}

@@ -13,6 +13,7 @@ import {
   UserRound,
 } from "lucide-react";
 import { signOut } from "@/api/auth";
+import { useDataMode } from "@/components/data-mode-provider";
 import { useOnboardingTour } from "@/components/onboarding-tour-provider";
 import { useTheme } from "@/components/theme-provider";
 import { Button } from "@/components/ui/button";
@@ -74,6 +75,7 @@ function handleClickSettingsPlaceholder(settingsMenuPlaceholder: SettingsMenuPla
 export default function SettingsMenu() {
   const { themeMode, accentColor, setThemeMode, setAccentColor } = useTheme();
   const { requestTour } = useOnboardingTour();
+  const { dataMode } = useDataMode();
 
   const activeThemeModeOption =
     THEME_MODE_OPTIONS.find((option) => option.value === themeMode) ?? THEME_MODE_OPTIONS[0];
@@ -159,7 +161,7 @@ export default function SettingsMenu() {
 
         <DropdownMenuSeparator />
 
-        <DropdownMenuItem variant="destructive" onClick={() => void signOut()}>
+        <DropdownMenuItem variant="destructive" onClick={() => void signOut(dataMode)}>
           <LogOut aria-hidden />
           Log out
         </DropdownMenuItem>

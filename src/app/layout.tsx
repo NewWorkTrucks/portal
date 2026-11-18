@@ -1,13 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
-import { CurrentUserProvider } from "@/components/current-user-provider";
-import AppHeader from "@/components/layout/app-header";
+import { DataModeProvider } from "@/components/data-mode-provider";
 import { OnboardingTourProvider } from "@/components/onboarding-tour-provider";
 import { ThemeProvider } from "@/components/theme-provider";
-import { MOCK_BUSINESSES } from "@/data/mock-businesses";
-import { MOCK_SIGNED_IN_USER_ID } from "@/data/mock-current-user";
-import { MOCK_TEAM_MEMBERS } from "@/data/mock-team-members";
 import { buildThemeInitScript } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 
@@ -49,16 +45,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       </head>
       <body className="flex h-dvh flex-col">
         <ThemeProvider>
-          <CurrentUserProvider
-            teamMembers={MOCK_TEAM_MEMBERS}
-            businesses={MOCK_BUSINESSES}
-            signedInUserId={MOCK_SIGNED_IN_USER_ID}
-          >
-            <OnboardingTourProvider>
-              <AppHeader />
-              <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">{children}</div>
-            </OnboardingTourProvider>
-          </CurrentUserProvider>
+          <DataModeProvider>
+            <OnboardingTourProvider>{children}</OnboardingTourProvider>
+          </DataModeProvider>
         </ThemeProvider>
       </body>
     </html>
