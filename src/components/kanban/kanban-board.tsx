@@ -81,6 +81,7 @@ export default function KanbanBoard() {
     archiveTask,
     transitionTask,
     postDailyUpdate,
+    addTaskUpdate,
     attachFiles,
     removeAttachment,
     getTaskPermissions,
@@ -322,9 +323,13 @@ export default function KanbanBoard() {
     setIsNoteDialogOpen(true);
   }
 
-  /** Attachment operations start in the details panel, so the panel reopens when they finish. */
+  /** Updates and attachment operations start in the details panel, so it reopens when they finish. */
   function reopenDetailsPanelAfter(noteOperation: KanbanPendingNoteOperation) {
-    if (noteOperation.kind === "attach-files" || noteOperation.kind === "remove-attachment") {
+    if (
+      noteOperation.kind === "add-update" ||
+      noteOperation.kind === "attach-files" ||
+      noteOperation.kind === "remove-attachment"
+    ) {
       openDetailsPanel(noteOperation.task);
     }
   }
@@ -360,6 +365,9 @@ export default function KanbanBoard() {
         break;
       case "archive":
         await archiveTask(pendingNoteOperation.task, note);
+        break;
+      case "add-update":
+        await addTaskUpdate(pendingNoteOperation.task, note);
         break;
       case "attach-files":
         await attachFiles(pendingNoteOperation.task, pendingNoteOperation.files, note);
@@ -418,6 +426,7 @@ export default function KanbanBoard() {
     onClickArchive: (task) => openNoteDialog({ kind: "archive", task }),
     onSelectOwner: handleSelectTaskOwner,
     onClickDailyUpdate: (task) => openNoteDialog({ kind: "daily-update", task }),
+    onClickAddUpdate: (task) => openNoteDialog({ kind: "add-update", task }),
     onClickApprove: (task) => openReviewDecision(task, "done"),
     onClickReturn: (task) => openReviewDecision(task, "working-on-it"),
     onSelectAttachments: (task: KanbanTask, files: File[]) =>
@@ -434,6 +443,7 @@ export default function KanbanBoard() {
     onClickArchive: closeDetailsPanelThen(kanbanTaskActions.onClickArchive),
     onSelectOwner: closeDetailsPanelThen(kanbanTaskActions.onSelectOwner),
     onClickDailyUpdate: closeDetailsPanelThen(kanbanTaskActions.onClickDailyUpdate),
+    onClickAddUpdate: closeDetailsPanelThen(kanbanTaskActions.onClickAddUpdate),
     onClickApprove: closeDetailsPanelThen(kanbanTaskActions.onClickApprove),
     onClickReturn: closeDetailsPanelThen(kanbanTaskActions.onClickReturn),
     onSelectAttachments: closeDetailsPanelThen(kanbanTaskActions.onSelectAttachments),

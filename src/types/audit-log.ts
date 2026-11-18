@@ -6,6 +6,7 @@ export type KanbanAuditLogAction =
   | "owner-changed"
   | "archived"
   | "daily-update"
+  | "update"
   | "attached"
   | "attachment-removed";
 

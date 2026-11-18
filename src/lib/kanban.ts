@@ -1,5 +1,6 @@
 import { arrayMove } from "@dnd-kit/sortable";
 import { KANBAN_COLUMNS } from "@/constants/kanban-columns";
+import { WORKDAY_TIME_ZONE } from "@/constants/time-zone";
 import type {
   KanbanEstimatedTurnaround,
   KanbanStatus,
@@ -154,7 +155,11 @@ export function parseTurnaroundAmount(amountInput: string): number | null {
     : null;
 }
 
-/** Today as YYYY-MM-DD in the viewer's time zone, for date inputs. */
+const WORKDAY_ISO_DATE_FORMATTER = new Intl.DateTimeFormat("en-CA", {
+  timeZone: WORKDAY_TIME_ZONE,
+});
+
+/** Today as YYYY-MM-DD in the workday time zone (US Central), for due dates and date inputs. */
 export function getTodayIsoDate(): string {
-  return new Date().toLocaleDateString("en-CA");
+  return WORKDAY_ISO_DATE_FORMATTER.format(new Date());
 }

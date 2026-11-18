@@ -32,6 +32,11 @@ export async function postKanbanDailyUpdate(taskId: string, dailyUpdate: KanbanD
   window.alert(`TODO: daily update endpoint\n\nTask: ${taskId}\n${JSON.stringify(dailyUpdate, null, 2)}`);
 }
 
+export async function postKanbanTaskUpdate(taskId: string, note: string) {
+  // TODO: Replace with the card-update endpoint (e.g. POST /kanban/tasks/:taskId/updates).
+  window.alert(`TODO: card update endpoint\n\nTask: ${taskId}\nNote: ${note}`);
+}
+
 /** Uploads files and returns their stored metadata. */
 export async function uploadKanbanAttachments(
   taskId: string,

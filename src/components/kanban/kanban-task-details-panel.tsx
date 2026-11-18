@@ -11,6 +11,7 @@ import {
   FileMinus,
   History,
   Lock,
+  MessageSquarePlus,
   Paperclip,
   Pencil,
   TextCursorInput,
@@ -200,8 +201,7 @@ export default function KanbanTaskDetailsPanel({
                 </section>
               )}
 
-              {(task.status === "working-on-it" || task.status === "needs-review") && (
-                <section aria-label="Stage actions" className="flex flex-wrap gap-2">
+              <section aria-label="Update and stage actions" className="flex flex-wrap gap-2">
                   {task.status === "working-on-it" && (
                     <Button
                       disabled={!taskPermissions.canPostDailyUpdate}
@@ -230,8 +230,19 @@ export default function KanbanTaskDetailsPanel({
                       </Button>
                     </>
                   )}
+                  <Button
+                    variant={
+                      task.status === "working-on-it" || task.status === "needs-review"
+                        ? "outline"
+                        : "default"
+                    }
+                    disabled={!taskPermissions.canAddUpdate}
+                    onClick={() => taskActions.onClickAddUpdate(task)}
+                  >
+                    <MessageSquarePlus aria-hidden />
+                    Add update
+                  </Button>
                 </section>
-              )}
 
               <section aria-label="Actions" className="flex flex-col gap-2">
                 <div className="flex flex-wrap gap-2">

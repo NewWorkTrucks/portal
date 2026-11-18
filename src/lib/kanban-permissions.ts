@@ -32,6 +32,9 @@ export function getKanbanTaskPermissions(user: TeamMember, task: KanbanTask): Ka
       capabilities.canMoveToDone &&
       (!isOwner || canApproveOwnWork),
     canManageAttachments: canEdit,
+    // Updates don't change the card, so anyone who can see it may post one; the business
+    // check in the board provider keeps it to the card's own business.
+    canAddUpdate: true,
   };
 }
 

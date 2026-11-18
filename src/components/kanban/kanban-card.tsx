@@ -14,6 +14,7 @@ import {
   Repeat,
   Lock,
   CalendarDays,
+  MessageSquarePlus,
   MessageSquareText,
   Timer,
   Pencil,
@@ -274,40 +275,43 @@ export default function KanbanCard({ task, teamMembers, taskActions }: KanbanCar
           </ContextMenuItem>
         </ContextMenuGroup>
 
-        {(task.status === "working-on-it" || task.status === "needs-review") && (
-          <>
-            <ContextMenuSeparator />
-            <ContextMenuGroup>
-              {task.status === "working-on-it" && (
-                <ContextMenuItem
-                  disabled={!taskPermissions.canPostDailyUpdate}
-                  onClick={() => taskActions.onClickDailyUpdate(task)}
-                >
-                  <ClipboardCheck aria-hidden />
-                  Post daily update
-                </ContextMenuItem>
-              )}
-              {task.status === "needs-review" && (
-                <>
-                  <ContextMenuItem
-                    disabled={!taskPermissions.canReview}
-                    onClick={() => taskActions.onClickApprove(task)}
-                  >
-                    <CircleCheck aria-hidden />
-                    Approve
-                  </ContextMenuItem>
-                  <ContextMenuItem
-                    disabled={!taskPermissions.canReview}
-                    onClick={() => taskActions.onClickReturn(task)}
-                  >
-                    <CornerUpLeft aria-hidden />
-                    Return for revisions
-                  </ContextMenuItem>
-                </>
-              )}
-            </ContextMenuGroup>
-          </>
-        )}
+        <ContextMenuSeparator />
+        <ContextMenuGroup>
+          <ContextMenuItem
+            disabled={!taskPermissions.canAddUpdate}
+            onClick={() => taskActions.onClickAddUpdate(task)}
+          >
+            <MessageSquarePlus aria-hidden />
+            Add update
+          </ContextMenuItem>
+          {task.status === "working-on-it" && (
+            <ContextMenuItem
+              disabled={!taskPermissions.canPostDailyUpdate}
+              onClick={() => taskActions.onClickDailyUpdate(task)}
+            >
+              <ClipboardCheck aria-hidden />
+              Post daily update
+            </ContextMenuItem>
+          )}
+          {task.status === "needs-review" && (
+            <>
+              <ContextMenuItem
+                disabled={!taskPermissions.canReview}
+                onClick={() => taskActions.onClickApprove(task)}
+              >
+                <CircleCheck aria-hidden />
+                Approve
+              </ContextMenuItem>
+              <ContextMenuItem
+                disabled={!taskPermissions.canReview}
+                onClick={() => taskActions.onClickReturn(task)}
+              >
+                <CornerUpLeft aria-hidden />
+                Return for revisions
+              </ContextMenuItem>
+            </>
+          )}
+        </ContextMenuGroup>
 
         <ContextMenuSeparator />
 

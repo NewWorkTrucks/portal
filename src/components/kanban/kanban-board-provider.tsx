@@ -7,6 +7,7 @@ import {
   createKanbanTask,
   notifyMentionedUsers,
   postKanbanDailyUpdate,
+  postKanbanTaskUpdate,
   removeKanbanAttachment,
   renameKanbanTask,
   transitionKanbanTask,
@@ -323,6 +324,20 @@ export function KanbanBoardProvider({ initialTasks, children }: KanbanBoardProvi
     await recordAuditLogEntry(task, "daily-update", "Daily update", dailyUpdateNote);
   }
 
+  async function addTaskUpdate(task: KanbanTask, note: string) {
+    assertTaskInCurrentBusiness(task);
+    assertKanbanPermission(
+      getTaskPermissions(task).canAddUpdate,
+      "You don't have permission to post updates on this card.",
+    );
+
+    await postKanbanTaskUpdate(task.id, note);
+    setTasksByStatus((previousTasksByStatus) =>
+      updateTaskById(previousTasksByStatus, task.id, { latestNote: note }),
+    );
+    await recordAuditLogEntry(task, "update", `Posted in ${getColumnTitle(task.status)}`, note);
+  }
+
   async function attachFiles(task: KanbanTask, files: File[], note: string) {
     assertTaskInCurrentBusiness(task);
     assertKanbanPermission(
@@ -396,6 +411,7 @@ export function KanbanBoardProvider({ initialTasks, children }: KanbanBoardProvi
         archiveTask,
         transitionTask,
         postDailyUpdate,
+        addTaskUpdate,
         attachFiles,
         removeAttachment,
         getTaskPermissions,

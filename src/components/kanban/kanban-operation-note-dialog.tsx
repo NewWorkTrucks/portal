@@ -1,6 +1,13 @@
 "use client";
 
-import { Archive, FileMinus, type LucideIcon, Paperclip, UserRoundPen } from "lucide-react";
+import {
+  Archive,
+  FileMinus,
+  type LucideIcon,
+  MessageSquarePlus,
+  Paperclip,
+  UserRoundPen,
+} from "lucide-react";
 import type { ReactNode } from "react";
 import KanbanOperationNoteForm from "@/components/forms/kanban-operation-note-form";
 import {
@@ -41,6 +48,21 @@ function TaskTitle({ title }: { title: string }) {
 
 function getOperationDialogCopy(operation: KanbanNoteOnlyOperation): OperationDialogCopy {
   switch (operation.kind) {
+    case "add-update":
+      return {
+        title: "Add update",
+        description: (
+          <>
+            Post a progress note or comment on <TaskTitle title={operation.task.title} />. It
+            becomes the card&rsquo;s latest note.
+          </>
+        ),
+        noteLabel: "Update",
+        notePlaceholder: "e.g. Supplier confirmed by phone; written quote expected Friday. @Miggy FYI",
+        submitLabel: "Post update",
+        SubmitIcon: MessageSquarePlus,
+        submitVariant: "default",
+      };
     case "change-owner":
       return {
         title: "Change ownership",
@@ -104,7 +126,7 @@ function getOperationDialogCopy(operation: KanbanNoteOnlyOperation): OperationDi
   }
 }
 
-/** One dialog for operations that only need a note: reassign, archive and attachments. */
+/** One dialog for operations that only need a note: updates, reassign, archive and attachments. */
 export default function KanbanOperationNoteDialog({
   operation,
   mentionables,
