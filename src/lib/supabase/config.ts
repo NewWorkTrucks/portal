@@ -1,6 +1,6 @@
 /** Public Supabase settings from .env; null when they aren't set (mock-only setups). */
-export function getSupabaseConfig(): { url: string; anonKey: string } | null {
+export function getSupabaseConfig(): { url: string; publishableKey: string } | null {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  return url && anonKey ? { url, anonKey } : null;
+  const publishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+  return url && publishableKey ? { url, publishableKey } : null;
 }

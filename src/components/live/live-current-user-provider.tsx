@@ -176,7 +176,7 @@ export default function LiveCurrentUserProvider({ children }: LiveCurrentUserPro
     return (
       <LiveStatusMessage title="Live mode isn't set up">
         <p className="text-muted-foreground">
-          Set <code>NEXT_PUBLIC_SUPABASE_URL</code> and <code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code> in
+          Set <code>NEXT_PUBLIC_SUPABASE_URL</code> and <code>NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY</code> in
           <code> .env</code> (see <code>.env.example</code>), or switch back to mock mode.
         </p>
       </LiveStatusMessage>

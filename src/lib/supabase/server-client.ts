@@ -6,11 +6,11 @@ import { getSupabaseConfig } from "@/lib/supabase/config";
 export async function createSupabaseServerClient() {
   const supabaseConfig = getSupabaseConfig();
   if (!supabaseConfig) {
-    throw new Error("Supabase isn't configured: set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.");
+    throw new Error("Supabase isn't configured: set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY.");
   }
 
   const cookieStore = await cookies();
-  return createServerClient(supabaseConfig.url, supabaseConfig.anonKey, {
+  return createServerClient(supabaseConfig.url, supabaseConfig.publishableKey, {
     cookies: {
       getAll: () => cookieStore.getAll(),
       setAll: (cookiesToSet) => {

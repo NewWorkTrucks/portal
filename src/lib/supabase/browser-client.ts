@@ -13,6 +13,6 @@ export function getSupabaseBrowserClient(): SupabaseClient | null {
   if (!supabaseConfig) {
     return null;
   }
-  browserClient ??= createBrowserClient(supabaseConfig.url, supabaseConfig.anonKey);
+  browserClient ??= createBrowserClient(supabaseConfig.url, supabaseConfig.publishableKey);
   return browserClient;
 }
