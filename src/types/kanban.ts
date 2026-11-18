@@ -50,6 +50,8 @@ export type KanbanTask = {
   dueDate: string;
   estimatedTurnaround: KanbanEstimatedTurnaround;
   latestNote: string;
+  /** Order within the column (live mode); mock mode uses array order. */
+  position?: number;
   attachments: KanbanAttachment[];
   /** How many times the card has been deferred (E2-8). */
   deferralCount: number;
@@ -154,6 +156,8 @@ export type KanbanBoardContextValue = {
     previousStatus: KanbanStatus,
     transition: KanbanStageTransition,
   ) => Promise<void>;
+  /** Saves a card's new position within its column after a drag (live mode). */
+  reorderTask: (taskId: string, orderedTaskIds: string[]) => Promise<void>;
   postDailyUpdate: (task: KanbanTask, dailyUpdate: KanbanDailyUpdate) => Promise<void>;
   addTaskUpdate: (task: KanbanTask, note: string) => Promise<void>;
   attachFiles: (task: KanbanTask, files: File[], note: string) => Promise<void>;

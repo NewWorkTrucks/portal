@@ -6,7 +6,8 @@ import type { Business } from "@/types/business";
 import type { CurrentUserContextValue } from "@/types/current-user";
 import type { TeamMember } from "@/types/team";
 
-const CurrentUserContext = createContext<CurrentUserContextValue | null>(null);
+/** Filled by the mock provider below or by LiveCurrentUserProvider, depending on data mode. */
+export const CurrentUserContext = createContext<CurrentUserContextValue | null>(null);
 
 type CurrentUserProviderProps = {
   teamMembers: TeamMember[];
@@ -21,6 +22,7 @@ type CurrentUserProviderProps = {
  * TODO: Once auth exists, the backend must authorize every request by the real session,
  * never by the simulated user.
  */
+/** Mock mode: the sample team, with development-only "view as" and business switching. */
 export function CurrentUserProvider({
   teamMembers,
   businesses,

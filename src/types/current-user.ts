@@ -14,6 +14,6 @@ export type CurrentUserContextValue = {
   availableBusinesses: Business[];
   /** The business whose data the app shows; always one the current user belongs to (E4-2). */
   currentBusiness: Business;
-  /** Development only: switch which business we are viewing. */
+  /** Switch which business we are viewing: development-only in mock mode, real in live mode. */
   selectBusiness: (businessId: string) => void;
 };

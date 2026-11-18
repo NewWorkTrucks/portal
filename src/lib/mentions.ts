@@ -25,7 +25,7 @@ export function buildMentionables(
       memberNames: mentionGroup.memberNames,
     })),
     ...teamMembers.map((teamMember) => ({
-      handle: teamMember.name.replace(/\s+/g, ""),
+      handle: teamMember.mentionHandle ?? teamMember.name.replace(/\s+/g, ""),
       label: teamMember.name,
       description: teamMember.jobTitle,
       kind: "member" as const,

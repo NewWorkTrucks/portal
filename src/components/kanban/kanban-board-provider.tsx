@@ -53,7 +53,8 @@ import type {
 } from "@/types/kanban";
 import type { KanbanDailyUpdate, KanbanStageTransition } from "@/types/kanban-stages";
 
-const KanbanBoardContext = createContext<KanbanBoardContextValue | null>(null);
+/** Filled by the mock provider below or by LiveKanbanBoardProvider, depending on data mode. */
+export const KanbanBoardContext = createContext<KanbanBoardContextValue | null>(null);
 
 type KanbanBoardProviderProps = {
   initialTasks: KanbanTask[];
@@ -65,6 +66,7 @@ type KanbanBoardProviderProps = {
  * Every committed change goes through an action here, which calls the API and appends
  * an audit log entry. Nothing removes or edits log entries.
  */
+/** Mock mode: sample cards kept in this browser; the src/api stubs stand in for the backend. */
 export function KanbanBoardProvider({ initialTasks, children }: KanbanBoardProviderProps) {
   const {
     teamMembers: allTeamMembers,
@@ -410,6 +412,8 @@ export function KanbanBoardProvider({ initialTasks, children }: KanbanBoardProvi
         changeTaskOwner,
         archiveTask,
         transitionTask,
+        // Mock order lives only in this browser, so there is nothing to save.
+        reorderTask: async () => undefined,
         postDailyUpdate,
         addTaskUpdate,
         attachFiles,
