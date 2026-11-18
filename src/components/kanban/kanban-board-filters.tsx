@@ -94,6 +94,7 @@ export default function KanbanBoardFilters({
   return (
     <section
       aria-label="Filter cards"
+      data-tour="filters"
       className="mx-6 mb-4 flex flex-wrap items-center gap-2 rounded-lg border bg-muted/30 p-2"
     >
       <div className="relative min-w-48 flex-1 sm:max-w-64">

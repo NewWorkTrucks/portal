@@ -31,14 +31,16 @@ export default function AppHeader() {
 
       <div className="flex min-w-0 items-center gap-2 sm:gap-3">
         {/* Build-time constant, so production never shows these development menus. */}
-        {IS_USER_SIMULATION_ENABLED ? (
-          <BusinessSwitcherMenu />
-        ) : (
-          <span className="hidden items-center gap-1.5 text-xs font-medium text-muted-foreground sm:flex">
-            <Building2 aria-hidden className="size-3.5" />
-            {currentBusiness.shortName}
-          </span>
-        )}
+        <span data-tour="business" className="flex">
+          {IS_USER_SIMULATION_ENABLED ? (
+            <BusinessSwitcherMenu />
+          ) : (
+            <span className="hidden items-center gap-1.5 text-xs font-medium text-muted-foreground sm:flex">
+              <Building2 aria-hidden className="size-3.5" />
+              {currentBusiness.shortName}
+            </span>
+          )}
+        </span>
         {IS_USER_SIMULATION_ENABLED && <UserSimulationMenu />}
         <UserProfile />
         <SettingsMenu />

@@ -206,3 +206,96 @@
     @apply font-sans;
   }
 }
+/*
+ * Onboarding tour (driver.js, E5-2), matched to the app's theme tokens so it follows
+ * light/dark mode and the accent color.
+ */
+.ffl-tour-popover.driver-popover {
+  max-width: 340px;
+  border-radius: var(--radius-lg);
+  background-color: var(--popover);
+  color: var(--popover-foreground);
+  box-shadow: 0 10px 30px oklch(0 0 0 / 25%);
+  outline: 1px solid var(--border);
+  font-family: var(--font-sans);
+}
+
+.ffl-tour-popover .driver-popover-title {
+  font-family: var(--font-heading);
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.ffl-tour-popover .driver-popover-description {
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--muted-foreground);
+}
+
+.ffl-tour-popover .driver-popover-progress-text {
+  font-size: 0.7rem;
+  color: var(--muted-foreground);
+}
+
+.ffl-tour-popover .driver-popover-close-btn {
+  color: var(--muted-foreground);
+}
+
+.ffl-tour-popover .driver-popover-close-btn:hover,
+.ffl-tour-popover .driver-popover-close-btn:focus-visible {
+  color: var(--foreground);
+}
+
+.ffl-tour-popover .driver-popover-footer {
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.ffl-tour-popover .driver-popover-footer button {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background-color: var(--background);
+  color: var(--foreground);
+  font-size: 0.75rem;
+  padding: 0.3rem 0.65rem;
+  text-shadow: none;
+}
+
+.ffl-tour-popover .driver-popover-footer .driver-popover-next-btn {
+  border-color: var(--primary);
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.ffl-tour-popover .driver-popover-footer button:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 1px;
+}
+
+.ffl-tour-popover .driver-popover-footer .ffl-tour-dismiss-button {
+  margin-right: auto;
+  border-color: transparent;
+  background-color: transparent;
+  color: var(--muted-foreground);
+}
+
+.ffl-tour-popover .driver-popover-footer .ffl-tour-dismiss-button:hover {
+  color: var(--foreground);
+  text-decoration: underline;
+}
+
+.ffl-tour-popover .driver-popover-arrow-side-left {
+  border-color: transparent transparent transparent var(--popover);
+}
+
+.ffl-tour-popover .driver-popover-arrow-side-right {
+  border-color: transparent var(--popover) transparent transparent;
+}
+
+.ffl-tour-popover .driver-popover-arrow-side-top {
+  border-color: var(--popover) transparent transparent transparent;
+}
+
+.ffl-tour-popover .driver-popover-arrow-side-bottom {
+  border-color: transparent transparent var(--popover) transparent;
+}

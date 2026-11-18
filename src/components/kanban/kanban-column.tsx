@@ -36,6 +36,7 @@ export default function KanbanColumn({
     <section
       ref={setNodeRef}
       aria-labelledby={`kanban-column-${column.status}`}
+      data-tour={`column-${column.status}`}
       className={cn(
         "flex max-h-full w-72 shrink-0 flex-col rounded-xl border bg-muted/50 transition-[colors,opacity]",
         isOver && !dropBlockedReason && "border-primary/40 bg-primary/5",

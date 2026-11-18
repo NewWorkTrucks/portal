@@ -21,6 +21,7 @@ import { useKanbanBoard } from "@/components/kanban/kanban-board-provider";
 import { KanbanCardContent } from "@/components/kanban/kanban-card";
 import KanbanBoardFilters from "@/components/kanban/kanban-board-filters";
 import KanbanColumn from "@/components/kanban/kanban-column";
+import KanbanOnboardingTour from "@/components/kanban/kanban-onboarding-tour";
 import KanbanOperationNoteDialog from "@/components/kanban/kanban-operation-note-dialog";
 import KanbanStageTransitionDialog from "@/components/kanban/kanban-stage-transition-dialog";
 import KanbanTaskCreateDialog from "@/components/kanban/kanban-task-create-dialog";
@@ -487,12 +488,16 @@ export default function KanbanBoard() {
       onDragCancel={handleDragCancel}
     >
       <div className="flex items-center gap-2 px-6 pb-4">
-        <Button onClick={() => openTaskDialog("create", null)}>
+        <Button data-tour="new-task" onClick={() => openTaskDialog("create", null)}>
           <Plus aria-hidden />
           New task
         </Button>
         {/* TODO: Temporary route. Move the audit log to its own page in the portal navigation. */}
-        <Link href="/kanban/audit-log" className={buttonVariants({ variant: "outline" })}>
+        <Link
+          href="/kanban/audit-log"
+          data-tour="audit-log"
+          className={buttonVariants({ variant: "outline" })}
+        >
           <History aria-hidden />
           Audit log
         </Link>
@@ -514,7 +519,7 @@ export default function KanbanBoard() {
         totalTaskCount={totalTaskCount}
       />
 
-      <div className="flex min-h-0 flex-1 gap-4 overflow-x-auto px-6 pb-6">
+      <div data-tour="board-columns" className="flex min-h-0 flex-1 gap-4 overflow-x-auto px-6 pb-6">
         {visibleColumns.map((column) => (
           <KanbanColumn
             key={column.status}
@@ -529,6 +534,8 @@ export default function KanbanBoard() {
       </div>
 
       <DragOverlay>{activeTask ? <KanbanCardContent task={activeTask} isOverlay /> : null}</DragOverlay>
+
+      <KanbanOnboardingTour />
 
       <KanbanTaskDetailsPanel
         task={detailsTask}

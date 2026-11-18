@@ -4,6 +4,7 @@ import {
   Bell,
   BookOpen,
   Building2,
+  Route,
   Columns3,
   LogOut,
   type LucideIcon,
@@ -12,6 +13,7 @@ import {
   UserRound,
 } from "lucide-react";
 import { signOut } from "@/api/auth";
+import { useOnboardingTour } from "@/components/onboarding-tour-provider";
 import { useTheme } from "@/components/theme-provider";
 import { Button } from "@/components/ui/button";
 import {
@@ -59,9 +61,9 @@ const SETTINGS_MENU_PLACEHOLDERS: SettingsMenuPlaceholder[] = [
   },
   { label: "Account settings", Icon: Settings, plannedFeature: "Account settings page" },
   {
-    label: "Onboarding guide",
+    label: "One-page guide",
     Icon: BookOpen,
-    plannedFeature: "One-page pilot onboarding guide (E5-2)",
+    plannedFeature: "Printable one-page pilot guide (E5-2)",
   },
 ];
 
@@ -71,6 +73,7 @@ function handleClickSettingsPlaceholder(settingsMenuPlaceholder: SettingsMenuPla
 
 export default function SettingsMenu() {
   const { themeMode, accentColor, setThemeMode, setAccentColor } = useTheme();
+  const { requestTour } = useOnboardingTour();
 
   const activeThemeModeOption =
     THEME_MODE_OPTIONS.find((option) => option.value === themeMode) ?? THEME_MODE_OPTIONS[0];
@@ -79,13 +82,17 @@ export default function SettingsMenu() {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger render={<Button variant="ghost" size="icon" aria-label="Settings" />}>
+      <DropdownMenuTrigger render={<Button variant="ghost" size="icon" aria-label="Settings" data-tour="settings" />}>
         <Settings aria-hidden />
       </DropdownMenuTrigger>
 
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuGroup>
           <DropdownMenuLabel>Settings</DropdownMenuLabel>
+          <DropdownMenuItem onClick={requestTour}>
+            <Route aria-hidden />
+            Take the tour
+          </DropdownMenuItem>
           {SETTINGS_MENU_PLACEHOLDERS.map((settingsMenuPlaceholder) => (
             <DropdownMenuItem
               key={settingsMenuPlaceholder.label}

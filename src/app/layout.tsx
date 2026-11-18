@@ -3,6 +3,7 @@ import { Geist, Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
 import { CurrentUserProvider } from "@/components/current-user-provider";
 import AppHeader from "@/components/layout/app-header";
+import { OnboardingTourProvider } from "@/components/onboarding-tour-provider";
 import { ThemeProvider } from "@/components/theme-provider";
 import { MOCK_BUSINESSES } from "@/data/mock-businesses";
 import { MOCK_SIGNED_IN_USER_ID } from "@/data/mock-current-user";
@@ -53,8 +54,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             businesses={MOCK_BUSINESSES}
             signedInUserId={MOCK_SIGNED_IN_USER_ID}
           >
-            <AppHeader />
-            <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">{children}</div>
+            <OnboardingTourProvider>
+              <AppHeader />
+              <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">{children}</div>
+            </OnboardingTourProvider>
           </CurrentUserProvider>
         </ThemeProvider>
       </body>

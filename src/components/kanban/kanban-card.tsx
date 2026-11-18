@@ -217,6 +217,7 @@ export default function KanbanCard({ task, teamMembers, taskActions }: KanbanCar
           isDragging && "opacity-40",
         )}
         aria-label={task.title}
+        data-tour="card"
         {...attributes}
         {...listeners}
         onPointerDown={handlePointerDownCard}
