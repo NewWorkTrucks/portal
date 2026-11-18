@@ -11,6 +11,8 @@ export const MOCK_KANBAN_TASKS: KanbanTask[] = [
     dueDate: "2026-11-24",
     estimatedTurnaround: { amount: 2, unit: "days" },
     latestNote: "Assigned this morning. Starting after the board demo.",
+    attachments: [],
+    deferralCount: 0,
   },
   {
     id: "task-2",
@@ -22,6 +24,8 @@ export const MOCK_KANBAN_TASKS: KanbanTask[] = [
     dueDate: "2026-11-20",
     estimatedTurnaround: { amount: 4, unit: "hours" },
     latestNote: "Waiting on workspace admin access before starting.",
+    attachments: [],
+    deferralCount: 0,
   },
   {
     id: "task-3",
@@ -33,6 +37,8 @@ export const MOCK_KANBAN_TASKS: KanbanTask[] = [
     dueDate: "2026-11-21",
     estimatedTurnaround: { amount: 3, unit: "days" },
     latestNote: "Columns and cards done. Drag-and-drop between columns in progress.",
+    attachments: [],
+    deferralCount: 0,
   },
   {
     id: "task-4",
@@ -44,6 +50,8 @@ export const MOCK_KANBAN_TASKS: KanbanTask[] = [
     dueDate: "2026-11-25",
     estimatedTurnaround: { amount: 2, unit: "days" },
     latestNote: "Captured Miggy's direct reports. Still need Erik and Jacob's teams.",
+    attachments: [],
+    deferralCount: 0,
   },
   {
     id: "task-5",
@@ -55,6 +63,9 @@ export const MOCK_KANBAN_TASKS: KanbanTask[] = [
     dueDate: "2026-11-20",
     estimatedTurnaround: { amount: 1, unit: "days" },
     latestNote: "Draft template submitted to @Alexis for first-level review.",
+    attachments: [],
+    deferralCount: 0,
+    reviewerName: "Alexis",
   },
   {
     id: "task-6",
@@ -66,6 +77,13 @@ export const MOCK_KANBAN_TASKS: KanbanTask[] = [
     dueDate: "2026-11-27",
     estimatedTurnaround: { amount: 2, unit: "hours" },
     latestNote: "Waiting for the supplier's revised quote.",
+    attachments: [],
+    deferralCount: 0,
+    waitingDetails: {
+      waitingOnWhat: "Revised quote for the office equipment order",
+      waitingOnWho: "Supplier account manager",
+      contactedDate: "2026-11-17",
+    },
     followUpDate: "2026-11-20",
   },
   {
@@ -78,7 +96,13 @@ export const MOCK_KANBAN_TASKS: KanbanTask[] = [
     dueDate: "2026-11-22",
     estimatedTurnaround: { amount: 1, unit: "days" },
     latestNote: "Export API is rate-limited on our plan. Need a plan upgrade decision.",
-    revisitDate: "2026-11-21",
+    attachments: [],
+    deferralCount: 0,
+    blockerDetails: {
+      blocker: "monday.com export API is rate-limited on our plan.",
+      attempts: "Tried batching exports overnight; still throttled.",
+      helpNeeded: "Decision on a temporary plan upgrade.",
+    },
   },
   {
     id: "task-8",
@@ -90,6 +114,8 @@ export const MOCK_KANBAN_TASKS: KanbanTask[] = [
     dueDate: "2026-12-15",
     estimatedTurnaround: { amount: 5, unit: "days" },
     latestNote: "Deferral approved: moved to Phase 2 after core policy controls.",
+    attachments: [],
+    deferralCount: 1,
     revisitDate: "2026-12-01",
   },
   {
@@ -102,5 +128,11 @@ export const MOCK_KANBAN_TASKS: KanbanTask[] = [
     dueDate: "2026-11-18",
     estimatedTurnaround: { amount: 1, unit: "days" },
     latestNote: "Approved by Miggy after department head review.",
+    attachments: [],
+    deferralCount: 0,
+    completionSummary: {
+      completedWork: "Wrote definitions and rules for all seven statuses.",
+      outcome: "Approved as the basis for the board's stage forms.",
+    },
   },
 ];

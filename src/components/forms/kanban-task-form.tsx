@@ -21,16 +21,15 @@ import { Textarea } from "@/components/ui/textarea";
 import MentionTextarea from "@/components/mention-textarea";
 import UserAvatar from "@/components/user-avatar";
 import { KANBAN_COLUMNS } from "@/constants/kanban-columns";
-import {
-  KANBAN_TASK_PRIORITY_OPTIONS,
-  KANBAN_TURNAROUND_UNIT_OPTIONS,
-} from "@/constants/kanban-task-priorities";
+import { KANBAN_TASK_PRIORITY_OPTIONS } from "@/constants/kanban-task-priorities";
+import { KANBAN_CREATABLE_STATUSES } from "@/constants/kanban-stages";
+import TurnaroundInput from "@/components/turnaround-input";
+import { parseTurnaroundAmount } from "@/lib/kanban";
 import type {
   KanbanStatus,
   KanbanTaskFormMode,
   KanbanTaskFormValues,
   KanbanTaskPriority,
-  KanbanTurnaroundUnit,
 } from "@/types/kanban";
 import type { Mentionable } from "@/types/mention";
 import type { TeamMember } from "@/types/team";
@@ -39,6 +38,11 @@ const KANBAN_STATUS_OPTIONS = KANBAN_COLUMNS.map((column) => ({
   value: column.status,
   label: column.title,
 }));
+
+// New cards start in a stage without required fields; the rest are entered by moving the card (Epic 2).
+const KANBAN_CREATE_STATUS_OPTIONS = KANBAN_STATUS_OPTIONS.filter((statusOption) =>
+  KANBAN_CREATABLE_STATUSES.includes(statusOption.value),
+);
 
 type KanbanTaskFormErrors = Partial<Record<keyof KanbanTaskFormValues, string>>;
 
@@ -60,7 +64,6 @@ function validateKanbanTaskForm(
   turnaroundAmountInput: string,
 ): KanbanTaskFormErrors {
   const formErrors: KanbanTaskFormErrors = {};
-  const turnaroundAmount = Number(turnaroundAmountInput);
 
   if (!values.title.trim()) {
     formErrors.title = "Title is required.";
@@ -71,7 +74,7 @@ function validateKanbanTaskForm(
   if (!values.dueDate) {
     formErrors.dueDate = "Due date is required.";
   }
-  if (!turnaroundAmountInput.trim() || !Number.isFinite(turnaroundAmount) || turnaroundAmount <= 0) {
+  if (parseTurnaroundAmount(turnaroundAmountInput) === null) {
     formErrors.estimatedTurnaround = "Enter an estimated turnaround greater than 0.";
   }
   if (!values.note.trim()) {
@@ -167,7 +170,7 @@ export default function KanbanTaskForm({
         <Field>
           <FieldLabel htmlFor="kanban-task-status">Status</FieldLabel>
           <Select
-            items={KANBAN_STATUS_OPTIONS}
+            items={mode === "create" ? KANBAN_CREATE_STATUS_OPTIONS : KANBAN_STATUS_OPTIONS}
             value={formValues.status}
             onValueChange={(status) => status && updateFormValue("status", status as KanbanStatus)}
             disabled={mode === "edit"}
@@ -176,16 +179,18 @@ export default function KanbanTaskForm({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {KANBAN_STATUS_OPTIONS.map((statusOption) => (
+              {(mode === "create" ? KANBAN_CREATE_STATUS_OPTIONS : KANBAN_STATUS_OPTIONS).map((statusOption) => (
                 <SelectItem key={statusOption.value} value={statusOption.value}>
                   {statusOption.label}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
-          {mode === "edit" && (
-            <FieldDescription>Move the card on the board to change its status.</FieldDescription>
-          )}
+          <FieldDescription>
+            {mode === "edit"
+              ? "Move the card on the board to change its status."
+              : "Other stages need their own details, so move the card there once it exists."}
+          </FieldDescription>
         </Field>
 
         <div className="grid grid-cols-2 gap-4">
@@ -256,47 +261,22 @@ export default function KanbanTaskForm({
 
           <Field data-invalid={Boolean(formErrors.estimatedTurnaround)}>
             <FieldLabel htmlFor="kanban-task-turnaround">Estimated turnaround</FieldLabel>
-            <div className="flex gap-2">
-              <Input
-                id="kanban-task-turnaround"
-                type="number"
-                inputMode="decimal"
-                min={0.5}
-                step={0.5}
-                value={turnaroundAmountInput}
-                onChange={(event) => {
-                  setTurnaroundAmountInput(event.target.value);
-                  setFormErrors((previousFormErrors) => ({
-                    ...previousFormErrors,
-                    estimatedTurnaround: undefined,
-                  }));
-                }}
-                aria-invalid={Boolean(formErrors.estimatedTurnaround)}
-                className="min-w-0 flex-1"
-              />
-              <Select
-                items={KANBAN_TURNAROUND_UNIT_OPTIONS}
-                value={formValues.estimatedTurnaround.unit}
-                onValueChange={(unit) =>
-                  unit &&
-                  updateFormValue("estimatedTurnaround", {
-                    ...formValues.estimatedTurnaround,
-                    unit: unit as KanbanTurnaroundUnit,
-                  })
-                }
-              >
-                <SelectTrigger aria-label="Turnaround unit" className="w-24">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {KANBAN_TURNAROUND_UNIT_OPTIONS.map((unitOption) => (
-                    <SelectItem key={unitOption.value} value={unitOption.value}>
-                      {unitOption.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <TurnaroundInput
+              id="kanban-task-turnaround"
+              amountInput={turnaroundAmountInput}
+              unit={formValues.estimatedTurnaround.unit}
+              onChangeAmountInput={(amountInput) => {
+                setTurnaroundAmountInput(amountInput);
+                setFormErrors((previousFormErrors) => ({
+                  ...previousFormErrors,
+                  estimatedTurnaround: undefined,
+                }));
+              }}
+              onChangeUnit={(unit) =>
+                updateFormValue("estimatedTurnaround", { ...formValues.estimatedTurnaround, unit })
+              }
+              aria-invalid={Boolean(formErrors.estimatedTurnaround)}
+            />
             <FieldError>{formErrors.estimatedTurnaround}</FieldError>
           </Field>
         </div>

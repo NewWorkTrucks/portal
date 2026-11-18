@@ -1,6 +1,6 @@
 "use client";
 
-import { Archive, ArrowRightLeft, type LucideIcon, UserRoundPen } from "lucide-react";
+import { Archive, FileMinus, type LucideIcon, Paperclip, UserRoundPen } from "lucide-react";
 import type { ReactNode } from "react";
 import KanbanOperationNoteForm from "@/components/forms/kanban-operation-note-form";
 import {
@@ -11,14 +11,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { KANBAN_BOARD_NAME } from "@/constants/kanban-columns";
-import { getColumnTitle } from "@/lib/kanban";
-import type { KanbanPendingNoteOperation } from "@/types/kanban";
+import { formatFileSize } from "@/lib/kanban-stages";
+import type { KanbanNoteOnlyOperation } from "@/types/kanban";
 
 import type { Mentionable } from "@/types/mention";
 
 type KanbanOperationNoteDialogProps = {
   /** Kept after the dialog closes so its content doesn't vanish during the exit animation. */
-  operation: KanbanPendingNoteOperation | null;
+  operation: KanbanNoteOnlyOperation | null;
   mentionables: Mentionable[];
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
@@ -39,23 +39,8 @@ function TaskTitle({ title }: { title: string }) {
   return <strong className="font-semibold text-foreground">“{title}”</strong>;
 }
 
-function getOperationDialogCopy(operation: KanbanPendingNoteOperation): OperationDialogCopy {
+function getOperationDialogCopy(operation: KanbanNoteOnlyOperation): OperationDialogCopy {
   switch (operation.kind) {
-    case "move":
-      return {
-        title: `Move to ${getColumnTitle(operation.newStatus)}`,
-        description: (
-          <>
-            <TaskTitle title={operation.task.title} /> is moving from{" "}
-            {getColumnTitle(operation.previousStatus)} to {getColumnTitle(operation.newStatus)}.
-          </>
-        ),
-        noteLabel: "Why is it moving?",
-        notePlaceholder: "e.g. Started the checklist draft; first section done.",
-        submitLabel: "Move task",
-        SubmitIcon: ArrowRightLeft,
-        submitVariant: "default",
-      };
     case "change-owner":
       return {
         title: "Change ownership",
@@ -86,10 +71,40 @@ function getOperationDialogCopy(operation: KanbanPendingNoteOperation): Operatio
         SubmitIcon: Archive,
         submitVariant: "destructive",
       };
+    case "attach-files":
+      return {
+        title: `Attach ${operation.files.length} file${operation.files.length === 1 ? "" : "s"}`,
+        description: (
+          <>
+            Adding {operation.files.map((file) => `${file.name} (${formatFileSize(file.size)})`).join(", ")} to{" "}
+            <TaskTitle title={operation.task.title} />.
+          </>
+        ),
+        noteLabel: "What are these files?",
+        notePlaceholder: "e.g. Signed supplier quote, as evidence for the order.",
+        submitLabel: "Attach",
+        SubmitIcon: Paperclip,
+        submitVariant: "default",
+      };
+    case "remove-attachment":
+      return {
+        title: "Remove attachment?",
+        description: (
+          <>
+            {operation.attachment.fileName} will be removed from <TaskTitle title={operation.task.title} />.
+            The removal stays in the audit log.
+          </>
+        ),
+        noteLabel: "Why remove it?",
+        notePlaceholder: "e.g. Uploaded the wrong version.",
+        submitLabel: "Remove",
+        SubmitIcon: FileMinus,
+        submitVariant: "destructive",
+      };
   }
 }
 
-/** One dialog for every board operation that has no form of its own; each one requires a note. */
+/** One dialog for operations that only need a note: reassign, archive and attachments. */
 export default function KanbanOperationNoteDialog({
   operation,
   mentionables,

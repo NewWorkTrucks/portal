@@ -4,7 +4,10 @@ export type KanbanAuditLogAction =
   | "renamed"
   | "moved"
   | "owner-changed"
-  | "archived";
+  | "archived"
+  | "daily-update"
+  | "attached"
+  | "attachment-removed";
 
 /** One immutable entry in a card's activity log (E1-5). Entries are only ever appended. */
 export type KanbanAuditLogEntry = {

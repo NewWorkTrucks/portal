@@ -1,10 +1,17 @@
 "use client";
 
 import { useSortable } from "@dnd-kit/sortable";
+import { type KeyboardEvent, type MouseEvent, type PointerEvent, useRef } from "react";
 import { CSS } from "@dnd-kit/utilities";
 import {
   Archive,
   CalendarClock,
+  CircleCheck,
+  ClipboardCheck,
+  CornerUpLeft,
+  Eye,
+  Paperclip,
+  Repeat,
   Lock,
   CalendarDays,
   MessageSquareText,
@@ -36,6 +43,9 @@ import { cn } from "@/lib/utils";
 import { formatEstimatedTurnaround, formatKanbanDate } from "@/lib/kanban";
 import type { KanbanTask, KanbanTaskActions, KanbanTaskPriority } from "@/types/kanban";
 import type { TeamMember } from "@/types/team";
+
+// A pointer that moves further than this between press and release was a drag, not a click.
+const CLICK_MOVEMENT_TOLERANCE_PX = 5;
 
 const PRIORITY_BADGE_CLASS_NAMES: Record<KanbanTaskPriority, string> = {
   low: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",
@@ -87,13 +97,37 @@ export function KanbanCardContent({ task, isOverlay = false }: KanbanCardContent
       {task.latestNote && (
         <p className="flex gap-1.5 rounded-md bg-muted px-2 py-1.5 text-xs text-muted-foreground">
           <MessageSquareText aria-hidden className="mt-0.5 size-3 shrink-0" />
-          <span className="line-clamp-2">
+          <span className="line-clamp-2 whitespace-pre-line">
             <MentionText
               text={task.latestNote}
               mentionables={mentionables}
               currentUserName={currentUser.name}
             />
           </span>
+        </p>
+      )}
+
+      {(task.reviewerName || task.deferralCount > 0 || task.attachments.length > 0) && (
+        <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+          {task.status === "needs-review" && task.reviewerName && (
+            <span className="flex items-center gap-1">
+              <Eye aria-hidden className="size-3" />
+              Reviewer: {task.reviewerName}
+            </span>
+          )}
+          {task.deferralCount > 0 && (
+            <span className="flex items-center gap-1" title="Times deferred">
+              <Repeat aria-hidden className="size-3" />
+              Deferred {task.deferralCount}×
+            </span>
+          )}
+          {task.attachments.length > 0 && (
+            <span className="flex items-center gap-1" title="Attachments">
+              <Paperclip aria-hidden className="size-3" />
+              <span className="sr-only">Attachments:</span>
+              {task.attachments.length}
+            </span>
+          )}
         </p>
       )}
 
@@ -140,10 +174,38 @@ export default function KanbanCard({ task, teamMembers, taskActions }: KanbanCar
     id: task.id,
     disabled: !taskPermissions.canMove,
   });
+  const pointerDownPositionRef = useRef<{ x: number; y: number } | null>(null);
+
+  function handlePointerDownCard(event: PointerEvent<HTMLElement>) {
+    pointerDownPositionRef.current = { x: event.clientX, y: event.clientY };
+    listeners?.onPointerDown?.(event);
+  }
+
+  function handleClickCard(event: MouseEvent<HTMLElement>) {
+    const pointerDownPosition = pointerDownPositionRef.current;
+    const wasDragged =
+      pointerDownPosition !== null &&
+      Math.hypot(event.clientX - pointerDownPosition.x, event.clientY - pointerDownPosition.y) >
+        CLICK_MOVEMENT_TOLERANCE_PX;
+
+    if (!wasDragged) {
+      taskActions.onOpenDetails(task);
+    }
+  }
+
+  function handleKeyDownCard(event: KeyboardEvent<HTMLElement>) {
+    listeners?.onKeyDown?.(event);
+
+    // Space picks the card up for a keyboard drag; Enter opens its details.
+    if (event.key === "Enter" && !isDragging && !event.defaultPrevented) {
+      event.preventDefault();
+      taskActions.onOpenDetails(task);
+    }
+  }
 
   return (
     <ContextMenu>
-      {/* Right-click (or the keyboard context-menu key / Shift+F10) opens the menu; left-drag still moves the card. */}
+      {/* Click or Enter opens details; right-click (or the context-menu key) opens the menu; dragging moves the card. */}
       <ContextMenuTrigger
         ref={setNodeRef}
         render={<li />}
@@ -156,6 +218,9 @@ export default function KanbanCard({ task, teamMembers, taskActions }: KanbanCar
         aria-label={task.title}
         {...attributes}
         {...listeners}
+        onPointerDown={handlePointerDownCard}
+        onKeyDown={handleKeyDownCard}
+        onClick={handleClickCard}
       >
         <KanbanCardContent task={task} />
       </ContextMenuTrigger>
@@ -208,6 +273,41 @@ export default function KanbanCard({ task, teamMembers, taskActions }: KanbanCar
             Rename
           </ContextMenuItem>
         </ContextMenuGroup>
+
+        {(task.status === "working-on-it" || task.status === "needs-review") && (
+          <>
+            <ContextMenuSeparator />
+            <ContextMenuGroup>
+              {task.status === "working-on-it" && (
+                <ContextMenuItem
+                  disabled={!taskPermissions.canPostDailyUpdate}
+                  onClick={() => taskActions.onClickDailyUpdate(task)}
+                >
+                  <ClipboardCheck aria-hidden />
+                  Post daily update
+                </ContextMenuItem>
+              )}
+              {task.status === "needs-review" && (
+                <>
+                  <ContextMenuItem
+                    disabled={!taskPermissions.canReview}
+                    onClick={() => taskActions.onClickApprove(task)}
+                  >
+                    <CircleCheck aria-hidden />
+                    Approve
+                  </ContextMenuItem>
+                  <ContextMenuItem
+                    disabled={!taskPermissions.canReview}
+                    onClick={() => taskActions.onClickReturn(task)}
+                  >
+                    <CornerUpLeft aria-hidden />
+                    Return for revisions
+                  </ContextMenuItem>
+                </>
+              )}
+            </ContextMenuGroup>
+          </>
+        )}
 
         <ContextMenuSeparator />
 

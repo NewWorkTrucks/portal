@@ -1,4 +1,6 @@
-import type { KanbanStatus, KanbanTaskFormValues } from "@/types/kanban";
+import type { KanbanAttachment } from "@/types/attachment";
+import type { KanbanTaskFormValues } from "@/types/kanban";
+import type { KanbanDailyUpdate, KanbanStageTransition } from "@/types/kanban-stages";
 
 // These calls stand in for backend endpoints that don't exist yet. Each one
 // alerts instead of sending a request; the board updates its local state after.
@@ -18,9 +20,45 @@ export async function renameKanbanTask(taskId: string, title: string, note: stri
   window.alert(`TODO: rename task endpoint\n\nTask: ${taskId}\nNew title: ${title}\nNote: ${note}`);
 }
 
-export async function moveKanbanTask(taskId: string, status: KanbanStatus, note: string) {
-  // TODO: Replace with the move-task endpoint (e.g. PATCH /kanban/tasks/:taskId/status).
-  window.alert(`TODO: move task endpoint\n\nTask: ${taskId}\nNew status: ${status}\nNote: ${note}`);
+export async function transitionKanbanTask(taskId: string, transition: KanbanStageTransition) {
+  // TODO: Replace with the stage-transition endpoint (e.g. POST /kanban/tasks/:taskId/transitions).
+  // The backend must validate the stage's required fields, and schedule the follow-up (Waiting)
+  // or revisit (Deferred) reminder (E2-6, E2-8, E3-6).
+  window.alert(`TODO: stage transition endpoint\n\nTask: ${taskId}\n${JSON.stringify(transition, null, 2)}`);
+}
+
+export async function postKanbanDailyUpdate(taskId: string, dailyUpdate: KanbanDailyUpdate) {
+  // TODO: Replace with the daily-update endpoint (e.g. POST /kanban/tasks/:taskId/updates) (E2-3).
+  window.alert(`TODO: daily update endpoint\n\nTask: ${taskId}\n${JSON.stringify(dailyUpdate, null, 2)}`);
+}
+
+/** Uploads files and returns their stored metadata. */
+export async function uploadKanbanAttachments(
+  taskId: string,
+  files: File[],
+  uploadedByName: string,
+  note: string,
+): Promise<KanbanAttachment[]> {
+  // TODO: Replace with an upload to Supabase Storage (max 25 MB per file) plus an endpoint that
+  // saves the attachment records (E1-4). Until then files stay in this browser as object URLs.
+  window.alert(
+    `TODO: upload attachments endpoint\n\nTask: ${taskId}\nFiles: ${files.map((file) => file.name).join(", ")}\nNote: ${note}`,
+  );
+
+  return files.map((file) => ({
+    id: crypto.randomUUID(),
+    fileName: file.name,
+    sizeBytes: file.size,
+    mimeType: file.type || "application/octet-stream",
+    uploadedByName,
+    uploadedAt: new Date().toISOString(),
+    url: URL.createObjectURL(file),
+  }));
+}
+
+export async function removeKanbanAttachment(taskId: string, attachmentId: string, note: string) {
+  // TODO: Replace with the remove-attachment endpoint (e.g. DELETE /kanban/tasks/:taskId/attachments/:id).
+  window.alert(`TODO: remove attachment endpoint\n\nTask: ${taskId}\nAttachment: ${attachmentId}\nNote: ${note}`);
 }
 
 export async function archiveKanbanTask(taskId: string, note: string) {

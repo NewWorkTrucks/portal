@@ -3,6 +3,16 @@ import { formatEstimatedTurnaround, formatKanbanDate } from "@/lib/kanban";
 import type { KanbanAuditLogAction, KanbanAuditLogEntry } from "@/types/audit-log";
 import type { KanbanTask, KanbanTaskEditableFields } from "@/types/kanban";
 
+// TODO: Confirm the reporting time zone (PH or US Central is an open question). Shows viewer-local time for now.
+const AUDIT_LOG_TIMESTAMP_FORMATTER = new Intl.DateTimeFormat("en-US", {
+  dateStyle: "medium",
+  timeStyle: "medium",
+});
+
+export function formatAuditLogTimestamp(isoTimestamp: string): string {
+  return AUDIT_LOG_TIMESTAMP_FORMATTER.format(new Date(isoTimestamp));
+}
+
 const EDITABLE_FIELD_LABELS: Record<keyof KanbanTaskEditableFields, string> = {
   title: "title",
   description: "description",

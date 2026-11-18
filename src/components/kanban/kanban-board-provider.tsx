@@ -5,18 +5,24 @@ import {
   archiveKanbanTask,
   changeKanbanTaskOwner,
   createKanbanTask,
-  moveKanbanTask,
   notifyMentionedUsers,
+  postKanbanDailyUpdate,
+  removeKanbanAttachment,
   renameKanbanTask,
+  transitionKanbanTask,
   updateKanbanTask,
+  uploadKanbanAttachments,
 } from "@/api/kanban";
 import { useCurrentUser } from "@/components/current-user-provider";
+import { MAX_ATTACHMENT_SIZE_BYTES } from "@/constants/attachments";
+import { KANBAN_CREATABLE_STATUSES } from "@/constants/kanban-stages";
 import { MOCK_MENTION_AUTO_INCLUDE_RULES, MOCK_MENTION_GROUPS } from "@/data/mock-mention-groups";
 import {
   findStatusOfDraggable,
   formatEstimatedTurnaround,
   getColumnTitle,
   groupTasksByStatus,
+  moveTaskToStatus,
   removeTaskById,
   updateTaskById,
 } from "@/lib/kanban";
@@ -26,7 +32,14 @@ import {
   getKanbanTaskPermissions,
   getTaskMoveDeniedReason,
 } from "@/lib/kanban-permissions";
+import {
+  describeDailyUpdate,
+  formatFileSize,
+  getStageAutoMentionHandles,
+  getStageTaskChanges,
+} from "@/lib/kanban-stages";
 import { buildMentionables, resolveMentionedNames } from "@/lib/mentions";
+import type { KanbanAttachment } from "@/types/attachment";
 import type { KanbanAuditLogAction, KanbanAuditLogEntry } from "@/types/audit-log";
 import type {
   ArchivedKanbanTask,
@@ -37,6 +50,7 @@ import type {
   KanbanTaskFormValues,
   KanbanTasksByStatus,
 } from "@/types/kanban";
+import type { KanbanDailyUpdate, KanbanStageTransition } from "@/types/kanban-stages";
 
 const KanbanBoardContext = createContext<KanbanBoardContextValue | null>(null);
 
@@ -65,15 +79,19 @@ export function KanbanBoardProvider({ initialTasks, children }: KanbanBoardProvi
     [teamMembers],
   );
 
-  /** Appends an audit log entry with the note's resolved mentions, then notifies them. */
+  /**
+   * Appends an audit log entry with the note's resolved mentions, then notifies them.
+   * `autoMentionHandles` are mentioned by policy, e.g. Leadership for Stuck cards (E2-7).
+   */
   async function recordAuditLogEntry(
     task: Pick<KanbanTask, "id" | "title">,
     action: KanbanAuditLogAction,
     summary: string,
     note: string,
+    autoMentionHandles: string[] = [],
   ) {
     const mentionedNames = resolveMentionedNames(
-      note,
+      [note, ...autoMentionHandles.map((handle) => `@${handle}`)].join(" "),
       mentionables,
       MOCK_MENTION_AUTO_INCLUDE_RULES,
     );
@@ -99,11 +117,19 @@ export function KanbanBoardProvider({ initialTasks, children }: KanbanBoardProvi
   }
 
   async function createTask(formValues: KanbanTaskFormValues) {
+    // Other stages have required fields, so new cards start in a stage without any (Epic 2).
+    assertKanbanPermission(
+      KANBAN_CREATABLE_STATUSES.includes(formValues.status),
+      `New cards start in ${KANBAN_CREATABLE_STATUSES.map(getColumnTitle).join(" or ")}.`,
+    );
+
     const { note, ...taskFields } = formValues;
     const newTask: KanbanTask = {
       ...taskFields,
       id: `task-${crypto.randomUUID()}`,
       latestNote: note,
+      attachments: [],
+      deferralCount: 0,
     };
 
     await createKanbanTask(formValues);
@@ -193,28 +219,115 @@ export function KanbanBoardProvider({ initialTasks, children }: KanbanBoardProvi
     await recordAuditLogEntry(task, "archived", `Archived from ${getColumnTitle(task.status)}`, note);
   }
 
-  /**
-   * Records a finished drag once its required note is given. The card is already in its new
-   * column. Reorders within a column aren't status changes, so they never reach here.
-   */
-  async function commitTaskMove(taskId: string, previousStatus: KanbanStatus, note: string) {
-    const newStatus = findStatusOfDraggable(tasksByStatus, taskId);
-    const movedTask = newStatus
-      ? tasksByStatus[newStatus].find((task) => task.id === taskId)
+  async function transitionTask(
+    taskId: string,
+    previousStatus: KanbanStatus,
+    transition: KanbanStageTransition,
+  ) {
+    const currentStatus = findStatusOfDraggable(tasksByStatus, taskId);
+    const task = currentStatus
+      ? tasksByStatus[currentStatus].find((boardTask) => boardTask.id === taskId)
       : undefined;
+    const newStatus = transition.status;
 
-    if (!newStatus || !movedTask || newStatus === previousStatus) {
+    if (!task || newStatus === previousStatus) {
       return;
     }
 
-    const moveDeniedReason = getMoveDeniedReason({ ...movedTask, status: previousStatus }, newStatus);
+    const moveDeniedReason = getMoveDeniedReason({ ...task, status: previousStatus }, newStatus);
     assertKanbanPermission(moveDeniedReason === null, moveDeniedReason ?? "");
 
-    await moveKanbanTask(taskId, newStatus, note);
-    setTasksByStatus((previousTasksByStatus) =>
-      updateTaskById(previousTasksByStatus, taskId, { latestNote: note }),
+    const stageTaskChanges = getStageTaskChanges(task, transition);
+
+    await transitionKanbanTask(taskId, transition);
+    setTasksByStatus((previousTasksByStatus) => {
+      // Drags already previewed the card in its new column; buttons (approve, return) move it here.
+      const tasksInNewColumn =
+        currentStatus === newStatus
+          ? previousTasksByStatus
+          : moveTaskToStatus(previousTasksByStatus, taskId, newStatus, 0);
+
+      return updateTaskById(tasksInNewColumn, taskId, stageTaskChanges);
+    });
+    await recordAuditLogEntry(
+      task,
+      "moved",
+      `${getColumnTitle(previousStatus)} → ${getColumnTitle(newStatus)}`,
+      stageTaskChanges.latestNote ?? "",
+      getStageAutoMentionHandles(transition, previousStatus),
     );
-    await recordAuditLogEntry(movedTask, "moved", `${getColumnTitle(previousStatus)} → ${getColumnTitle(newStatus)}`, note);
+  }
+
+  async function postDailyUpdate(task: KanbanTask, dailyUpdate: KanbanDailyUpdate) {
+    assertKanbanPermission(
+      getTaskPermissions(task).canPostDailyUpdate,
+      "Only the owner, a coordinator or an admin can post updates on cards in Working on It.",
+    );
+
+    const dailyUpdateNote = describeDailyUpdate(dailyUpdate);
+
+    await postKanbanDailyUpdate(task.id, dailyUpdate);
+    setTasksByStatus((previousTasksByStatus) =>
+      updateTaskById(previousTasksByStatus, task.id, {
+        latestNote: dailyUpdateNote,
+        lastDailyUpdateAt: new Date().toISOString(),
+      }),
+    );
+    await recordAuditLogEntry(task, "daily-update", "Daily update", dailyUpdateNote);
+  }
+
+  async function attachFiles(task: KanbanTask, files: File[], note: string) {
+    assertKanbanPermission(
+      getTaskPermissions(task).canManageAttachments,
+      "You don't have permission to add attachments to this card.",
+    );
+    assertKanbanPermission(
+      files.every((file) => file.size <= MAX_ATTACHMENT_SIZE_BYTES),
+      `Each file must be ${formatFileSize(MAX_ATTACHMENT_SIZE_BYTES)} or smaller.`,
+    );
+
+    const uploadedAttachments = await uploadKanbanAttachments(task.id, files, currentUser.name, note);
+    setTasksByStatus((previousTasksByStatus) => {
+      const status = findStatusOfDraggable(previousTasksByStatus, task.id);
+      const latestTask = status
+        ? previousTasksByStatus[status].find((boardTask) => boardTask.id === task.id)
+        : undefined;
+
+      return updateTaskById(previousTasksByStatus, task.id, {
+        attachments: [...uploadedAttachments, ...(latestTask?.attachments ?? [])],
+        latestNote: note,
+      });
+    });
+    await recordAuditLogEntry(
+      task,
+      "attached",
+      `Attached ${uploadedAttachments.map((attachment) => attachment.fileName).join(", ")}`,
+      note,
+    );
+  }
+
+  async function removeAttachment(task: KanbanTask, attachment: KanbanAttachment, note: string) {
+    assertKanbanPermission(
+      getTaskPermissions(task).canManageAttachments,
+      "You don't have permission to remove attachments from this card.",
+    );
+
+    await removeKanbanAttachment(task.id, attachment.id, note);
+    setTasksByStatus((previousTasksByStatus) => {
+      const status = findStatusOfDraggable(previousTasksByStatus, task.id);
+      const latestTask = status
+        ? previousTasksByStatus[status].find((boardTask) => boardTask.id === task.id)
+        : undefined;
+
+      return updateTaskById(previousTasksByStatus, task.id, {
+        attachments: (latestTask?.attachments ?? []).filter(
+          (taskAttachment) => taskAttachment.id !== attachment.id,
+        ),
+        latestNote: note,
+      });
+    });
+    URL.revokeObjectURL(attachment.url);
+    await recordAuditLogEntry(task, "attachment-removed", `Removed ${attachment.fileName}`, note);
   }
 
   return (
@@ -231,7 +344,10 @@ export function KanbanBoardProvider({ initialTasks, children }: KanbanBoardProvi
         renameTask,
         changeTaskOwner,
         archiveTask,
-        commitTaskMove,
+        transitionTask,
+        postDailyUpdate,
+        attachFiles,
+        removeAttachment,
         getTaskPermissions,
         getMoveDeniedReason,
       }}

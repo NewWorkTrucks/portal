@@ -145,3 +145,16 @@ export function formatEstimatedTurnaround({ amount, unit }: KanbanEstimatedTurna
   const unitLabel = unit === "hours" ? "hour" : "day";
   return `${amount} ${unitLabel}${amount === 1 ? "" : "s"}`;
 }
+
+/** A positive turnaround amount from text input, or null if it is empty or invalid. */
+export function parseTurnaroundAmount(amountInput: string): number | null {
+  const turnaroundAmount = Number(amountInput);
+  return amountInput.trim() && Number.isFinite(turnaroundAmount) && turnaroundAmount > 0
+    ? turnaroundAmount
+    : null;
+}
+
+/** Today as YYYY-MM-DD in the viewer's time zone, for date inputs. */
+export function getTodayIsoDate(): string {
+  return new Date().toLocaleDateString("en-CA");
+}

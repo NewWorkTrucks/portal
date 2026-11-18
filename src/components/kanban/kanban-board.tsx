@@ -21,11 +21,14 @@ import { useKanbanBoard } from "@/components/kanban/kanban-board-provider";
 import { KanbanCardContent } from "@/components/kanban/kanban-card";
 import KanbanColumn from "@/components/kanban/kanban-column";
 import KanbanOperationNoteDialog from "@/components/kanban/kanban-operation-note-dialog";
+import KanbanStageTransitionDialog from "@/components/kanban/kanban-stage-transition-dialog";
 import KanbanTaskCreateDialog from "@/components/kanban/kanban-task-create-dialog";
+import KanbanTaskDetailsPanel from "@/components/kanban/kanban-task-details-panel";
 import KanbanTaskEditDialog from "@/components/kanban/kanban-task-edit-dialog";
 import KanbanTaskRenameDialog from "@/components/kanban/kanban-task-rename-dialog";
 import { buttonVariants, Button } from "@/components/ui/button";
 import { KANBAN_COLUMNS } from "@/constants/kanban-columns";
+import { KANBAN_ROLE_DEFINITIONS } from "@/constants/kanban-role-capabilities";
 import {
   findStatusOfDraggable,
   findTaskById,
@@ -33,8 +36,12 @@ import {
   moveTaskToStatus,
   reorderTaskWithinStatus,
 } from "@/lib/kanban";
+import type { KanbanAttachment } from "@/types/attachment";
+import type { KanbanDailyUpdate, KanbanStageTransition } from "@/types/kanban-stages";
 import type {
+  KanbanNoteOnlyOperation,
   KanbanPendingNoteOperation,
+  KanbanStageOperation,
   KanbanStatus,
   KanbanTask,
   KanbanTaskActions,
@@ -44,6 +51,17 @@ import type {
 } from "@/types/kanban";
 
 const POINTER_ACTIVATION_DISTANCE_PX = 5;
+
+const KEYBOARD_DRAG_CODES = {
+  start: ["Space"],
+  cancel: ["Escape"],
+  end: ["Space", "Enter"],
+};
+
+const SCREEN_READER_INSTRUCTIONS = {
+  draggable:
+    "Press Enter to open this card's details. To move it, press Space, use the arrow keys, then press Space again to drop it or Escape to cancel.",
+};
 
 export default function KanbanBoard() {
   const {
@@ -56,14 +74,21 @@ export default function KanbanBoard() {
     renameTask,
     changeTaskOwner,
     archiveTask,
-    commitTaskMove,
+    transitionTask,
+    postDailyUpdate,
+    attachFiles,
+    removeAttachment,
     getTaskPermissions,
     getMoveDeniedReason,
   } = useKanbanBoard();
   const dndContextId = useId();
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: POINTER_ACTIVATION_DISTANCE_PX } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+      // Enter is reserved for opening a card's details, so only Space starts a keyboard drag.
+      keyboardCodes: KEYBOARD_DRAG_CODES,
+    }),
   );
 
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
@@ -73,6 +98,9 @@ export default function KanbanBoard() {
   // Kept after a dialog closes so its content doesn't vanish during the exit animation.
   const [dialogTask, setDialogTask] = useState<KanbanTask | null>(null);
   const [isNoteDialogOpen, setIsNoteDialogOpen] = useState(false);
+  const [isDetailsPanelOpen, setIsDetailsPanelOpen] = useState(false);
+  // Kept after the panel closes, so its content stays during the exit animation.
+  const [detailsTaskId, setDetailsTaskId] = useState<string | null>(null);
   // Kept after the note dialog closes, for the same exit-animation reason as dialogTask.
   const [pendingNoteOperation, setPendingNoteOperation] =
     useState<KanbanPendingNoteOperation | null>(null);
@@ -86,6 +114,12 @@ export default function KanbanBoard() {
   const draggedTaskAtStart = useMemo(
     () => (activeTaskId && tasksBeforeDrag ? findTaskById(tasksBeforeDrag, activeTaskId) : undefined),
     [activeTaskId, tasksBeforeDrag],
+  );
+
+  // Looked up live, so the panel reflects edits, moves and owner changes while it is open.
+  const detailsTask = useMemo(
+    () => (detailsTaskId ? (findTaskById(tasksByStatus, detailsTaskId) ?? null) : null),
+    [detailsTaskId, tasksByStatus],
   );
 
   const dragAnnouncements = useMemo<Announcements>(() => {
@@ -256,15 +290,31 @@ export default function KanbanBoard() {
     setIsNoteDialogOpen(true);
   }
 
+  /** Attachment operations start in the details panel, so the panel reopens when they finish. */
+  function reopenDetailsPanelAfter(noteOperation: KanbanPendingNoteOperation) {
+    if (noteOperation.kind === "attach-files" || noteOperation.kind === "remove-attachment") {
+      openDetailsPanel(noteOperation.task);
+    }
+  }
+
   function handleNoteDialogOpenChange(isOpen: boolean) {
-    if (isOpen) {
+    if (isOpen || !pendingNoteOperation) {
       return;
     }
 
-    if (pendingNoteOperation?.kind === "move") {
+    // Cancelling a drag puts the card back where it was.
+    if (pendingNoteOperation.kind === "move" && pendingNoteOperation.tasksBeforeMove) {
       setTasksByStatus(pendingNoteOperation.tasksBeforeMove);
     }
     setIsNoteDialogOpen(false);
+    reopenDetailsPanelAfter(pendingNoteOperation);
+  }
+
+  function closeNoteDialogAfterSave() {
+    setIsNoteDialogOpen(false);
+    if (pendingNoteOperation) {
+      reopenDetailsPanelAfter(pendingNoteOperation);
+    }
   }
 
   async function handleConfirmNoteOperation(note: string) {
@@ -273,22 +323,39 @@ export default function KanbanBoard() {
     }
 
     switch (pendingNoteOperation.kind) {
-      case "move":
-        await commitTaskMove(
-          pendingNoteOperation.task.id,
-          pendingNoteOperation.previousStatus,
-          note,
-        );
-        break;
       case "change-owner":
         await changeTaskOwner(pendingNoteOperation.task, pendingNoteOperation.newOwnerName, note);
         break;
       case "archive":
         await archiveTask(pendingNoteOperation.task, note);
         break;
+      case "attach-files":
+        await attachFiles(pendingNoteOperation.task, pendingNoteOperation.files, note);
+        break;
+      case "remove-attachment":
+        await removeAttachment(pendingNoteOperation.task, pendingNoteOperation.attachment, note);
+        break;
     }
 
-    setIsNoteDialogOpen(false);
+    closeNoteDialogAfterSave();
+  }
+
+  async function handleConfirmStageTransition(transition: KanbanStageTransition) {
+    if (pendingNoteOperation?.kind !== "move") {
+      return;
+    }
+
+    await transitionTask(pendingNoteOperation.task.id, pendingNoteOperation.previousStatus, transition);
+    closeNoteDialogAfterSave();
+  }
+
+  async function handleConfirmDailyUpdate(dailyUpdate: KanbanDailyUpdate) {
+    if (pendingNoteOperation?.kind !== "daily-update") {
+      return;
+    }
+
+    await postDailyUpdate(pendingNoteOperation.task, dailyUpdate);
+    closeNoteDialogAfterSave();
   }
 
   function handleSelectTaskOwner(task: KanbanTask, newOwnerName: string) {
@@ -297,19 +364,81 @@ export default function KanbanBoard() {
     }
   }
 
+  function openReviewDecision(task: KanbanTask, newStatus: KanbanStatus) {
+    openNoteDialog({
+      kind: "move",
+      task,
+      previousStatus: task.status,
+      newStatus,
+      tasksBeforeMove: null,
+    });
+  }
+
+  function openDetailsPanel(task: KanbanTask) {
+    setDetailsTaskId(task.id);
+    setIsDetailsPanelOpen(true);
+  }
+
   const kanbanTaskActions: KanbanTaskActions = {
+    onOpenDetails: openDetailsPanel,
     onClickEdit: (task) => openTaskDialog("edit", task),
     onClickRename: (task) => openTaskDialog("rename", task),
     onClickArchive: (task) => openNoteDialog({ kind: "archive", task }),
     onSelectOwner: handleSelectTaskOwner,
+    onClickDailyUpdate: (task) => openNoteDialog({ kind: "daily-update", task }),
+    onClickApprove: (task) => openReviewDecision(task, "done"),
+    onClickReturn: (task) => openReviewDecision(task, "working-on-it"),
+    onSelectAttachments: (task: KanbanTask, files: File[]) =>
+      openNoteDialog({ kind: "attach-files", task, files }),
+    onClickRemoveAttachment: (task: KanbanTask, attachment: KanbanAttachment) =>
+      openNoteDialog({ kind: "remove-attachment", task, attachment }),
   };
+
+  // Actions started from the panel close it first, so only one modal is open at a time.
+  const detailsPanelTaskActions: KanbanTaskActions = {
+    ...kanbanTaskActions,
+    onClickEdit: closeDetailsPanelThen(kanbanTaskActions.onClickEdit),
+    onClickRename: closeDetailsPanelThen(kanbanTaskActions.onClickRename),
+    onClickArchive: closeDetailsPanelThen(kanbanTaskActions.onClickArchive),
+    onSelectOwner: closeDetailsPanelThen(kanbanTaskActions.onSelectOwner),
+    onClickDailyUpdate: closeDetailsPanelThen(kanbanTaskActions.onClickDailyUpdate),
+    onClickApprove: closeDetailsPanelThen(kanbanTaskActions.onClickApprove),
+    onClickReturn: closeDetailsPanelThen(kanbanTaskActions.onClickReturn),
+    onSelectAttachments: closeDetailsPanelThen(kanbanTaskActions.onSelectAttachments),
+    onClickRemoveAttachment: closeDetailsPanelThen(kanbanTaskActions.onClickRemoveAttachment),
+  };
+
+  function closeDetailsPanelThen<ActionArguments extends unknown[]>(
+    taskAction: (...actionArguments: ActionArguments) => void,
+  ) {
+    return (...actionArguments: ActionArguments) => {
+      setIsDetailsPanelOpen(false);
+      taskAction(...actionArguments);
+    };
+  }
+
+  // E2-4: reviewers are anyone whose role can review, other than the card's owner.
+  const reviewerOptions = teamMembers.filter(
+    (teamMember) =>
+      KANBAN_ROLE_DEFINITIONS[teamMember.role].capabilities.canReviewTasks &&
+      teamMember.name !== pendingNoteOperation?.task.ownerName,
+  );
+  const stageOperation: KanbanStageOperation | null =
+    pendingNoteOperation?.kind === "move" || pendingNoteOperation?.kind === "daily-update"
+      ? pendingNoteOperation
+      : null;
+  const noteOnlyOperation: KanbanNoteOnlyOperation | null =
+    pendingNoteOperation && !stageOperation ? (pendingNoteOperation as KanbanNoteOnlyOperation) : null;
 
   return (
     <DndContext
       id={dndContextId}
       sensors={sensors}
       collisionDetection={closestCorners}
-      accessibility={{ announcements: dragAnnouncements }}
+      accessibility={{
+        announcements: dragAnnouncements,
+        screenReaderInstructions: SCREEN_READER_INSTRUCTIONS,
+      }}
       onDragStart={handleDragStart}
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
@@ -350,6 +479,13 @@ export default function KanbanBoard() {
 
       <DragOverlay>{activeTask ? <KanbanCardContent task={activeTask} isOverlay /> : null}</DragOverlay>
 
+      <KanbanTaskDetailsPanel
+        task={detailsTask}
+        teamMembers={teamMembers}
+        taskActions={detailsPanelTaskActions}
+        isOpen={isDetailsPanelOpen && detailsTask !== null}
+        onOpenChange={setIsDetailsPanelOpen}
+      />
       <KanbanTaskCreateDialog
         mentionables={mentionables}
         teamMembers={teamMembers}
@@ -375,10 +511,19 @@ export default function KanbanBoard() {
       />
       <KanbanOperationNoteDialog
         mentionables={mentionables}
-        operation={pendingNoteOperation}
-        isOpen={isNoteDialogOpen}
+        operation={noteOnlyOperation}
+        isOpen={isNoteDialogOpen && noteOnlyOperation !== null}
         onOpenChange={handleNoteDialogOpenChange}
         onConfirm={handleConfirmNoteOperation}
+      />
+      <KanbanStageTransitionDialog
+        operation={stageOperation}
+        reviewerOptions={reviewerOptions}
+        mentionables={mentionables}
+        isOpen={isNoteDialogOpen && stageOperation !== null}
+        onOpenChange={handleNoteDialogOpenChange}
+        onConfirmTransition={handleConfirmStageTransition}
+        onConfirmDailyUpdate={handleConfirmDailyUpdate}
       />
     </DndContext>
   );

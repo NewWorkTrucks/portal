@@ -26,4 +26,10 @@ export type KanbanTaskPermissions = {
   canArchive: boolean;
   /** Whether the card can be picked up and moved at all. */
   canMove: boolean;
+  /** Post the daily update for a card in Working on It (E2-3). */
+  canPostDailyUpdate: boolean;
+  /** Approve or return a card in Needs Review (E2-5). Reviewers can't review their own work. */
+  canReview: boolean;
+  /** Add or remove attachments (E1-4). */
+  canManageAttachments: boolean;
 };

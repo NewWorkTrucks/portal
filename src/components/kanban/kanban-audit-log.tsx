@@ -1,40 +1,13 @@
 "use client";
 
-import {
-  Archive,
-  ArrowRightLeft,
-  Bell,
-  type LucideIcon,
-  Pencil,
-  Plus,
-  TextCursorInput,
-  UserRoundPen,
-} from "lucide-react";
+import { Archive, Bell } from "lucide-react";
 import { useCurrentUser } from "@/components/current-user-provider";
 import { useKanbanBoard } from "@/components/kanban/kanban-board-provider";
 import MentionText from "@/components/mention-text";
 import UserAvatar from "@/components/user-avatar";
+import { AUDIT_LOG_ACTION_DISPLAY } from "@/constants/audit-log-actions";
 import { getColumnTitle } from "@/lib/kanban";
-import type { KanbanAuditLogAction } from "@/types/audit-log";
-
-const AUDIT_LOG_ACTION_DISPLAY: Record<KanbanAuditLogAction, { label: string; Icon: LucideIcon }> = {
-  created: { label: "Created", Icon: Plus },
-  edited: { label: "Edited", Icon: Pencil },
-  renamed: { label: "Renamed", Icon: TextCursorInput },
-  moved: { label: "Moved", Icon: ArrowRightLeft },
-  "owner-changed": { label: "Owner changed", Icon: UserRoundPen },
-  archived: { label: "Archived", Icon: Archive },
-};
-
-// TODO: Confirm the reporting time zone (PH or US Central is an open question). Shows viewer-local time for now.
-const AUDIT_LOG_TIMESTAMP_FORMATTER = new Intl.DateTimeFormat("en-US", {
-  dateStyle: "medium",
-  timeStyle: "medium",
-});
-
-function formatAuditLogTimestamp(isoTimestamp: string): string {
-  return AUDIT_LOG_TIMESTAMP_FORMATTER.format(new Date(isoTimestamp));
-}
+import { formatAuditLogTimestamp } from "@/lib/kanban-audit-log";
 
 export default function KanbanAuditLog() {
   const { auditLogEntries, archivedTasks, mentionables } = useKanbanBoard();
@@ -96,7 +69,7 @@ export default function KanbanAuditLog() {
                       </td>
                       <td className="px-3 py-2 font-medium">{auditLogEntry.taskTitle}</td>
                       <td className="px-3 py-2 text-muted-foreground">{auditLogEntry.summary}</td>
-                      <td className="px-3 py-2">
+                      <td className="px-3 py-2 whitespace-pre-line">
                         <MentionText
                           text={auditLogEntry.note}
                           mentionables={mentionables}
