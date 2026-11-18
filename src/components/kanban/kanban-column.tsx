@@ -12,6 +12,8 @@ import type { TeamMember } from "@/types/team";
 type KanbanColumnProps = {
   column: KanbanColumnDefinition;
   tasks: KanbanTask[];
+  /** Cards in this column before filtering, to show "2 of 5" while filters are on. */
+  totalTaskCount: number;
   teamMembers: TeamMember[];
   taskActions: KanbanTaskActions;
   /** Set while dragging a card the current user may not move into this column. */
@@ -21,6 +23,7 @@ type KanbanColumnProps = {
 export default function KanbanColumn({
   column,
   tasks,
+  totalTaskCount,
   teamMembers,
   taskActions,
   dropBlockedReason,
@@ -48,7 +51,7 @@ export default function KanbanColumn({
           <p className="truncate text-xs text-muted-foreground">{column.description}</p>
         </div>
         <span className="rounded-full bg-background px-2 py-0.5 text-xs font-medium text-muted-foreground tabular-nums">
-          {tasks.length}
+          {tasks.length === totalTaskCount ? tasks.length : `${tasks.length} of ${totalTaskCount}`}
         </span>
       </header>
 
@@ -71,7 +74,7 @@ export default function KanbanColumn({
           ))}
           {tasks.length === 0 && (
             <li className="flex flex-1 items-center justify-center rounded-lg border border-dashed text-xs text-muted-foreground">
-              Drop tasks here
+              {totalTaskCount > 0 ? "No matching cards" : "Drop tasks here"}
             </li>
           )}
         </ul>

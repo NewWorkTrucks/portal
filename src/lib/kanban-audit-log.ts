@@ -59,7 +59,7 @@ export function describeTaskEdits(task: KanbanTask, editedFields: KanbanTaskEdit
 }
 
 export function createAuditLogEntry(
-  task: Pick<KanbanTask, "id" | "title">,
+  task: Pick<KanbanTask, "id" | "title" | "businessId">,
   action: KanbanAuditLogAction,
   actor: { actorName: string; simulatedByName?: string },
   summary: string,
@@ -69,6 +69,7 @@ export function createAuditLogEntry(
   return Object.freeze({
     id: crypto.randomUUID(),
     taskId: task.id,
+    businessId: task.businessId,
     taskTitle: task.title,
     action,
     actorName: actor.actorName,

@@ -7,10 +7,12 @@ import {
   Columns3,
   LogOut,
   type LucideIcon,
+  Palette,
   Settings,
   UserRound,
 } from "lucide-react";
 import { signOut } from "@/api/auth";
+import { useTheme } from "@/components/theme-provider";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -18,9 +20,17 @@ import {
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ACCENT_COLOR_OPTIONS, THEME_MODE_OPTIONS } from "@/constants/theme";
+import { cn } from "@/lib/utils";
+import type { AccentColor, ThemeMode } from "@/types/theme";
 
 type SettingsMenuPlaceholder = {
   label: string;
@@ -60,6 +70,13 @@ function handleClickSettingsPlaceholder(settingsMenuPlaceholder: SettingsMenuPla
 }
 
 export default function SettingsMenu() {
+  const { themeMode, accentColor, setThemeMode, setAccentColor } = useTheme();
+
+  const activeThemeModeOption =
+    THEME_MODE_OPTIONS.find((option) => option.value === themeMode) ?? THEME_MODE_OPTIONS[0];
+  const activeAccentColorOption =
+    ACCENT_COLOR_OPTIONS.find((option) => option.value === accentColor) ?? ACCENT_COLOR_OPTIONS[0];
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger render={<Button variant="ghost" size="icon" aria-label="Settings" />}>
@@ -78,6 +95,59 @@ export default function SettingsMenu() {
               {settingsMenuPlaceholder.label}
             </DropdownMenuItem>
           ))}
+        </DropdownMenuGroup>
+
+        <DropdownMenuSeparator />
+
+        <DropdownMenuGroup>
+          <DropdownMenuLabel>Appearance</DropdownMenuLabel>
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger>
+              <activeThemeModeOption.Icon aria-hidden />
+              Theme
+              <span className="ml-auto text-muted-foreground">{activeThemeModeOption.label}</span>
+            </DropdownMenuSubTrigger>
+            <DropdownMenuSubContent className="w-40">
+              <DropdownMenuRadioGroup
+                value={themeMode}
+                onValueChange={(newThemeMode: ThemeMode) => setThemeMode(newThemeMode)}
+              >
+                {THEME_MODE_OPTIONS.map((themeModeOption) => (
+                  <DropdownMenuRadioItem key={themeModeOption.value} value={themeModeOption.value}>
+                    <themeModeOption.Icon aria-hidden />
+                    {themeModeOption.label}
+                  </DropdownMenuRadioItem>
+                ))}
+              </DropdownMenuRadioGroup>
+            </DropdownMenuSubContent>
+          </DropdownMenuSub>
+
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger>
+              <Palette aria-hidden />
+              Accent color
+              <span
+                aria-hidden
+                className={cn("ml-auto size-3 rounded-full ring-1 ring-foreground/25", activeAccentColorOption.swatchClassName)}
+              />
+            </DropdownMenuSubTrigger>
+            <DropdownMenuSubContent className="w-40">
+              <DropdownMenuRadioGroup
+                value={accentColor}
+                onValueChange={(newAccentColor: AccentColor) => setAccentColor(newAccentColor)}
+              >
+                {ACCENT_COLOR_OPTIONS.map((accentColorOption) => (
+                  <DropdownMenuRadioItem key={accentColorOption.value} value={accentColorOption.value}>
+                    <span
+                      aria-hidden
+                      className={cn("size-3.5 shrink-0 rounded-full ring-1 ring-foreground/25", accentColorOption.swatchClassName)}
+                    />
+                    {accentColorOption.label}
+                  </DropdownMenuRadioItem>
+                ))}
+              </DropdownMenuRadioGroup>
+            </DropdownMenuSubContent>
+          </DropdownMenuSub>
         </DropdownMenuGroup>
 
         <DropdownMenuSeparator />

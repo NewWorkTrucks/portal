@@ -3,8 +3,11 @@ import { Geist, Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
 import { CurrentUserProvider } from "@/components/current-user-provider";
 import AppHeader from "@/components/layout/app-header";
+import { ThemeProvider } from "@/components/theme-provider";
+import { MOCK_BUSINESSES } from "@/data/mock-businesses";
 import { MOCK_SIGNED_IN_USER_ID } from "@/data/mock-current-user";
 import { MOCK_TEAM_MEMBERS } from "@/data/mock-team-members";
+import { buildThemeInitScript } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 
 const geistHeading = Geist({subsets:['latin'],variable:'--font-heading'});
@@ -28,15 +31,32 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
+    // suppressHydrationWarning: the theme-init script sets the theme class and accent on <html>
+    // before React hydrates, so those attributes intentionally differ from the server HTML.
     <html
       lang="en"
+      suppressHydrationWarning
       className={cn("h-full", "antialiased", geistSans.variable, geistMono.variable, "font-sans", inter.variable, geistHeading.variable)}
     >
+      <head>
+        {/*
+          Applies the saved theme while the HTML is parsed, before first paint, so dark mode never
+          flashes light. A plain <script> here (not next/script) because next/script's inline
+          beforeInteractive scripts wait for Next's runtime to load.
+        */}
+        <script dangerouslySetInnerHTML={{ __html: buildThemeInitScript() }} />
+      </head>
       <body className="flex h-dvh flex-col">
-        <CurrentUserProvider teamMembers={MOCK_TEAM_MEMBERS} signedInUserId={MOCK_SIGNED_IN_USER_ID}>
-          <AppHeader />
-          <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">{children}</div>
-        </CurrentUserProvider>
+        <ThemeProvider>
+          <CurrentUserProvider
+            teamMembers={MOCK_TEAM_MEMBERS}
+            businesses={MOCK_BUSINESSES}
+            signedInUserId={MOCK_SIGNED_IN_USER_ID}
+          >
+            <AppHeader />
+            <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">{children}</div>
+          </CurrentUserProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

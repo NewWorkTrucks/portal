@@ -40,6 +40,8 @@ export type KanbanColumnDefinition = {
 
 export type KanbanTask = {
   id: string;
+  /** The business this card belongs to; never shown outside it (E4-2). */
+  businessId: string;
   title: string;
   description: string;
   status: KanbanStatus;
@@ -127,7 +129,10 @@ export type KanbanTaskActions = {
 export type KanbanBoardContextValue = {
   teamMembers: TeamMember[];
   mentionables: Mentionable[];
+  /** Cards of the current business only. */
   tasksByStatus: KanbanTasksByStatus;
+  /** Every business's cards. Only for drag snapshots, so restoring one never drops other businesses' cards. */
+  allTasksByStatus: KanbanTasksByStatus;
   archivedTasks: ArchivedKanbanTask[];
   auditLogEntries: readonly KanbanAuditLogEntry[];
   /** Live drag preview only. Committed changes go through the actions below so they are logged. */

@@ -19,6 +19,7 @@ import Link from "next/link";
 import { useId, useMemo, useState } from "react";
 import { useKanbanBoard } from "@/components/kanban/kanban-board-provider";
 import { KanbanCardContent } from "@/components/kanban/kanban-card";
+import KanbanBoardFilters from "@/components/kanban/kanban-board-filters";
 import KanbanColumn from "@/components/kanban/kanban-column";
 import KanbanOperationNoteDialog from "@/components/kanban/kanban-operation-note-dialog";
 import KanbanStageTransitionDialog from "@/components/kanban/kanban-stage-transition-dialog";
@@ -28,6 +29,7 @@ import KanbanTaskEditDialog from "@/components/kanban/kanban-task-edit-dialog";
 import KanbanTaskRenameDialog from "@/components/kanban/kanban-task-rename-dialog";
 import { buttonVariants, Button } from "@/components/ui/button";
 import { KANBAN_COLUMNS } from "@/constants/kanban-columns";
+import { EMPTY_KANBAN_TASK_FILTERS } from "@/constants/kanban-filters";
 import { KANBAN_ROLE_DEFINITIONS } from "@/constants/kanban-role-capabilities";
 import {
   findStatusOfDraggable,
@@ -36,7 +38,9 @@ import {
   moveTaskToStatus,
   reorderTaskWithinStatus,
 } from "@/lib/kanban";
+import { filterKanbanTasksByStatus } from "@/lib/kanban-filters";
 import type { KanbanAttachment } from "@/types/attachment";
+import type { KanbanTaskFilters } from "@/types/kanban-filters";
 import type { KanbanDailyUpdate, KanbanStageTransition } from "@/types/kanban-stages";
 import type {
   KanbanNoteOnlyOperation,
@@ -68,6 +72,7 @@ export default function KanbanBoard() {
     teamMembers,
     mentionables,
     tasksByStatus,
+    allTasksByStatus,
     setTasksByStatus,
     createTask,
     updateTask,
@@ -94,6 +99,7 @@ export default function KanbanBoard() {
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
   const [tasksBeforeDrag, setTasksBeforeDrag] = useState<KanbanTasksByStatus | null>(null);
   const [blockedMoveNotice, setBlockedMoveNotice] = useState<string | null>(null);
+  const [taskFilters, setTaskFilters] = useState<KanbanTaskFilters>(EMPTY_KANBAN_TASK_FILTERS);
   const [openDialogKind, setOpenDialogKind] = useState<KanbanTaskDialogKind | null>(null);
   // Kept after a dialog closes so its content doesn't vanish during the exit animation.
   const [dialogTask, setDialogTask] = useState<KanbanTask | null>(null);
@@ -108,6 +114,31 @@ export default function KanbanBoard() {
   const activeTask = useMemo(
     () => (activeTaskId ? findTaskById(tasksByStatus, activeTaskId) : undefined),
     [activeTaskId, tasksByStatus],
+  );
+
+  // E1-6: only matching cards are shown; dragging and saving still work on the full board.
+  const visibleTasksByStatus = useMemo(
+    () => filterKanbanTasksByStatus(tasksByStatus, taskFilters),
+    [tasksByStatus, taskFilters],
+  );
+  const visibleColumns = useMemo(
+    () =>
+      taskFilters.statuses.length > 0
+        ? KANBAN_COLUMNS.filter((column) => taskFilters.statuses.includes(column.status))
+        : KANBAN_COLUMNS,
+    [taskFilters.statuses],
+  );
+  const totalTaskCount = useMemo(
+    () => Object.values(tasksByStatus).reduce((taskCount, tasks) => taskCount + tasks.length, 0),
+    [tasksByStatus],
+  );
+  const visibleTaskCount = useMemo(
+    () =>
+      visibleColumns.reduce(
+        (taskCount, column) => taskCount + visibleTasksByStatus[column.status].length,
+        0,
+      ),
+    [visibleColumns, visibleTasksByStatus],
   );
 
   // The dragged card as it was when picked up, so permissions use its original column.
@@ -162,7 +193,8 @@ export default function KanbanBoard() {
   function handleDragStart({ active }: DragStartEvent) {
     setBlockedMoveNotice(null);
     setActiveTaskId(String(active.id));
-    setTasksBeforeDrag(tasksByStatus);
+    // Snapshot every business's cards, so cancelling restores the full board state.
+    setTasksBeforeDrag(allTasksByStatus);
   }
 
   // Moves the card into another column while it is still being dragged, so the
@@ -464,12 +496,21 @@ export default function KanbanBoard() {
         </p>
       </div>
 
+      <KanbanBoardFilters
+        filters={taskFilters}
+        onChangeFilters={setTaskFilters}
+        teamMembers={teamMembers}
+        visibleTaskCount={visibleTaskCount}
+        totalTaskCount={totalTaskCount}
+      />
+
       <div className="flex min-h-0 flex-1 gap-4 overflow-x-auto px-6 pb-6">
-        {KANBAN_COLUMNS.map((column) => (
+        {visibleColumns.map((column) => (
           <KanbanColumn
             key={column.status}
             column={column}
-            tasks={tasksByStatus[column.status]}
+            tasks={visibleTasksByStatus[column.status]}
+            totalTaskCount={tasksByStatus[column.status].length}
             teamMembers={teamMembers}
             taskActions={kanbanTaskActions}
             dropBlockedReason={getDropBlockedReason(column.status)}

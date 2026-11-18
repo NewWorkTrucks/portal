@@ -65,7 +65,13 @@ type KanbanBoardProviderProps = {
  * an audit log entry. Nothing removes or edits log entries.
  */
 export function KanbanBoardProvider({ initialTasks, children }: KanbanBoardProviderProps) {
-  const { teamMembers, currentUser, signedInUser, isSimulatingUser } = useCurrentUser();
+  const {
+    teamMembers: allTeamMembers,
+    currentUser,
+    signedInUser,
+    isSimulatingUser,
+    currentBusiness,
+  } = useCurrentUser();
 
   const [tasksByStatus, setTasksByStatus] = useState<KanbanTasksByStatus>(() =>
     groupTasksByStatus(initialTasks),
@@ -73,6 +79,32 @@ export function KanbanBoardProvider({ initialTasks, children }: KanbanBoardProvi
   const [archivedTasks, setArchivedTasks] = useState<ArchivedKanbanTask[]>([]);
   // TODO: Load from and persist to the backend activity log (append-only) instead of memory.
   const [auditLogEntries, setAuditLogEntries] = useState<readonly KanbanAuditLogEntry[]>([]);
+
+  // E4-2: everything below is scoped to the current business. Other businesses' cards stay in
+  // state (like rows in a shared table) but are never shown or changed from here.
+  // TODO: The backend must enforce this with business_id and RLS; this is a client-side mock.
+  const teamMembers = useMemo(
+    () => allTeamMembers.filter((teamMember) => teamMember.businessIds.includes(currentBusiness.id)),
+    [allTeamMembers, currentBusiness.id],
+  );
+  const businessTasksByStatus = useMemo(
+    () =>
+      Object.fromEntries(
+        Object.entries(tasksByStatus).map(([status, tasks]) => [
+          status,
+          tasks.filter((task) => task.businessId === currentBusiness.id),
+        ]),
+      ) as KanbanTasksByStatus,
+    [tasksByStatus, currentBusiness.id],
+  );
+  const businessArchivedTasks = useMemo(
+    () => archivedTasks.filter((task) => task.businessId === currentBusiness.id),
+    [archivedTasks, currentBusiness.id],
+  );
+  const businessAuditLogEntries = useMemo(
+    () => auditLogEntries.filter((entry) => entry.businessId === currentBusiness.id),
+    [auditLogEntries, currentBusiness.id],
+  );
 
   const mentionables = useMemo(
     () => buildMentionables(teamMembers, MOCK_MENTION_GROUPS),
@@ -84,7 +116,7 @@ export function KanbanBoardProvider({ initialTasks, children }: KanbanBoardProvi
    * `autoMentionHandles` are mentioned by policy, e.g. Leadership for Stuck cards (E2-7).
    */
   async function recordAuditLogEntry(
-    task: Pick<KanbanTask, "id" | "title">,
+    task: Pick<KanbanTask, "id" | "title" | "businessId">,
     action: KanbanAuditLogAction,
     summary: string,
     note: string,
@@ -127,6 +159,7 @@ export function KanbanBoardProvider({ initialTasks, children }: KanbanBoardProvi
     const newTask: KanbanTask = {
       ...taskFields,
       id: `task-${crypto.randomUUID()}`,
+      businessId: currentBusiness.id,
       latestNote: note,
       attachments: [],
       deferralCount: 0,
@@ -140,6 +173,13 @@ export function KanbanBoardProvider({ initialTasks, children }: KanbanBoardProvi
     await recordAuditLogEntry(newTask, "created", `Created in ${getColumnTitle(newTask.status)} for ${newTask.ownerName}, est. ${formatEstimatedTurnaround(newTask.estimatedTurnaround)}`, note);
   }
 
+  function assertTaskInCurrentBusiness(task: Pick<KanbanTask, "businessId">) {
+    assertKanbanPermission(
+      task.businessId === currentBusiness.id,
+      `This card belongs to another business and can't be changed from ${currentBusiness.shortName}.`,
+    );
+  }
+
   function getTaskPermissions(task: KanbanTask) {
     return getKanbanTaskPermissions(currentUser, task);
   }
@@ -149,6 +189,7 @@ export function KanbanBoardProvider({ initialTasks, children }: KanbanBoardProvi
   }
 
   async function updateTask(task: KanbanTask, formValues: KanbanTaskFormValues) {
+    assertTaskInCurrentBusiness(task);
     const taskPermissions = getTaskPermissions(task);
     assertKanbanPermission(taskPermissions.canEdit, "You don't have permission to edit this card.");
     assertKanbanPermission(
@@ -178,6 +219,7 @@ export function KanbanBoardProvider({ initialTasks, children }: KanbanBoardProvi
   }
 
   async function renameTask(task: KanbanTask, title: string, note: string) {
+    assertTaskInCurrentBusiness(task);
     assertKanbanPermission(
       getTaskPermissions(task).canRename,
       "You don't have permission to rename this card.",
@@ -186,10 +228,11 @@ export function KanbanBoardProvider({ initialTasks, children }: KanbanBoardProvi
     setTasksByStatus((previousTasksByStatus) =>
       updateTaskById(previousTasksByStatus, task.id, { title, latestNote: note }),
     );
-    await recordAuditLogEntry({ id: task.id, title }, "renamed", `Renamed from “${task.title}”`, note);
+    await recordAuditLogEntry({ id: task.id, title, businessId: task.businessId }, "renamed", `Renamed from “${task.title}”`, note);
   }
 
   async function changeTaskOwner(task: KanbanTask, ownerName: string, note: string) {
+    assertTaskInCurrentBusiness(task);
     if (task.ownerName === ownerName) {
       return;
     }
@@ -206,6 +249,7 @@ export function KanbanBoardProvider({ initialTasks, children }: KanbanBoardProvi
   }
 
   async function archiveTask(task: KanbanTask, note: string) {
+    assertTaskInCurrentBusiness(task);
     assertKanbanPermission(
       getTaskPermissions(task).canArchive,
       "You don't have permission to archive cards.",
@@ -234,6 +278,8 @@ export function KanbanBoardProvider({ initialTasks, children }: KanbanBoardProvi
       return;
     }
 
+    assertTaskInCurrentBusiness(task);
+
     const moveDeniedReason = getMoveDeniedReason({ ...task, status: previousStatus }, newStatus);
     assertKanbanPermission(moveDeniedReason === null, moveDeniedReason ?? "");
 
@@ -259,6 +305,7 @@ export function KanbanBoardProvider({ initialTasks, children }: KanbanBoardProvi
   }
 
   async function postDailyUpdate(task: KanbanTask, dailyUpdate: KanbanDailyUpdate) {
+    assertTaskInCurrentBusiness(task);
     assertKanbanPermission(
       getTaskPermissions(task).canPostDailyUpdate,
       "Only the owner, a coordinator or an admin can post updates on cards in Working on It.",
@@ -277,6 +324,7 @@ export function KanbanBoardProvider({ initialTasks, children }: KanbanBoardProvi
   }
 
   async function attachFiles(task: KanbanTask, files: File[], note: string) {
+    assertTaskInCurrentBusiness(task);
     assertKanbanPermission(
       getTaskPermissions(task).canManageAttachments,
       "You don't have permission to add attachments to this card.",
@@ -307,6 +355,7 @@ export function KanbanBoardProvider({ initialTasks, children }: KanbanBoardProvi
   }
 
   async function removeAttachment(task: KanbanTask, attachment: KanbanAttachment, note: string) {
+    assertTaskInCurrentBusiness(task);
     assertKanbanPermission(
       getTaskPermissions(task).canManageAttachments,
       "You don't have permission to remove attachments from this card.",
@@ -335,9 +384,10 @@ export function KanbanBoardProvider({ initialTasks, children }: KanbanBoardProvi
       value={{
         teamMembers,
         mentionables,
-        tasksByStatus,
-        archivedTasks,
-        auditLogEntries,
+        tasksByStatus: businessTasksByStatus,
+        allTasksByStatus: tasksByStatus,
+        archivedTasks: businessArchivedTasks,
+        auditLogEntries: businessAuditLogEntries,
         setTasksByStatus,
         createTask,
         updateTask,
