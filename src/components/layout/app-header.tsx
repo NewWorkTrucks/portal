@@ -9,6 +9,7 @@ import DataModeMenu from "@/components/layout/data-mode-menu";
 import SettingsMenu from "@/components/layout/settings-menu";
 import UserProfile from "@/components/layout/user-profile";
 import UserSimulationMenu from "@/components/layout/user-simulation-menu";
+import NotificationsMenu from "@/components/notifications/notifications-menu";
 import { IS_USER_SIMULATION_ENABLED } from "@/constants/feature-flags";
 import { cn } from "@/lib/utils";
 
@@ -51,6 +52,7 @@ export default function AppHeader() {
         </span>
         {canSimulateUsers && <UserSimulationMenu />}
         <UserProfile />
+        <NotificationsMenu />
         <SettingsMenu />
       </div>
     </header>

@@ -95,6 +95,14 @@ export const ONBOARDING_TOUR_STEPS: OnboardingTourStep[] = [
     roles: ["coordinator", "admin"],
   },
   {
+    id: "notifications",
+    target: "notifications",
+    title: "Notifications",
+    description:
+      "The bell shows when someone @mentions you, or asks you to review a card. Leadership is also told when a card gets Stuck. Click one to open the card.",
+    side: "bottom",
+  },
+  {
     id: "settings",
     target: "settings",
     title: "Settings",

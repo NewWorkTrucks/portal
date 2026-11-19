@@ -87,3 +87,18 @@ export type MentionGroupMemberRow = {
   mention_group_id: string;
   user_id: string;
 };
+
+/** kanban_notifications with its activity entry, actor and card embedded. */
+export type KanbanNotificationRow = {
+  id: string;
+  business_id: string;
+  task_id: string;
+  created_at: string;
+  read_at: string | null;
+  activity: {
+    note: string;
+    to_status: string | null;
+    actor: { full_name: string } | null;
+  } | null;
+  task: { title: string } | null;
+};

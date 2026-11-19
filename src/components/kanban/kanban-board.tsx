@@ -16,12 +16,13 @@ import {
 import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { History, Lock, Plus } from "lucide-react";
 import Link from "next/link";
-import { useId, useMemo, useState } from "react";
+import { Suspense, useId, useMemo, useState } from "react";
 import { useKanbanBoard } from "@/components/kanban/kanban-board-provider";
 import { KanbanCardContent } from "@/components/kanban/kanban-card";
 import KanbanBoardFilters from "@/components/kanban/kanban-board-filters";
 import KanbanColumn from "@/components/kanban/kanban-column";
 import KanbanOnboardingTour from "@/components/kanban/kanban-onboarding-tour";
+import KanbanOpenTaskFromUrl from "@/components/kanban/kanban-open-task-from-url";
 import KanbanOperationNoteDialog from "@/components/kanban/kanban-operation-note-dialog";
 import KanbanStageTransitionDialog from "@/components/kanban/kanban-stage-transition-dialog";
 import KanbanTaskCreateDialog from "@/components/kanban/kanban-task-create-dialog";
@@ -548,6 +549,10 @@ export default function KanbanBoard() {
       <DragOverlay>{activeTask ? <KanbanCardContent task={activeTask} isOverlay /> : null}</DragOverlay>
 
       <KanbanOnboardingTour />
+      {/* Reads ?task= from a notification link; suspended so the board still prerenders. */}
+      <Suspense fallback={null}>
+        <KanbanOpenTaskFromUrl tasksByStatus={tasksByStatus} onOpenTask={openDetailsPanel} />
+      </Suspense>
 
       <KanbanTaskDetailsPanel
         task={detailsTask}
