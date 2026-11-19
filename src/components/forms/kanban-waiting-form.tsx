@@ -1,9 +1,10 @@
 "use client";
 
 import { type FormEvent, useState } from "react";
-import MentionTextarea from "@/components/mention-textarea";
+import RichNoteEditor from "@/components/rich-note-editor";
 import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
+import UpdateFilesField from "@/components/update-files-field";
 import { Input } from "@/components/ui/input";
 import { getTodayIsoDate } from "@/lib/kanban";
 import type { KanbanWaitingValues } from "@/types/kanban-stages";
@@ -11,12 +12,14 @@ import type { Mentionable } from "@/types/mention";
 
 type KanbanWaitingFormProps = {
   mentionables: Mentionable[];
-  onSubmit: (values: KanbanWaitingValues) => void | Promise<void>;
+  onSubmit: (values: KanbanWaitingValues, files: File[]) => void | Promise<void>;
+  /** Shows "Add files". Only the card owner, coordinators and admins can attach files (E1-4). */
+  canAttachFiles?: boolean;
   onCancel?: () => void;
 };
 
 /** E2-6: what the card waits on, who, when they were contacted and when to follow up. */
-export default function KanbanWaitingForm({ mentionables, onSubmit, onCancel }: KanbanWaitingFormProps) {
+export default function KanbanWaitingForm({ mentionables, onSubmit, canAttachFiles = false, onCancel }: KanbanWaitingFormProps) {
   const [formValues, setFormValues] = useState<KanbanWaitingValues>({
     waitingOnWhat: "",
     waitingOnWho: "",
@@ -25,6 +28,7 @@ export default function KanbanWaitingForm({ mentionables, onSubmit, onCancel }: 
   });
   const [formErrors, setFormErrors] = useState<Partial<Record<keyof KanbanWaitingValues, string>>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [files, setFiles] = useState<File[]>([]);
 
   function updateFormValue(fieldName: keyof KanbanWaitingValues, fieldValue: string) {
     setFormValues((previousValues) => ({ ...previousValues, [fieldName]: fieldValue }));
@@ -61,7 +65,7 @@ export default function KanbanWaitingForm({ mentionables, onSubmit, onCancel }: 
 
     setIsSubmitting(true);
     try {
-      await onSubmit(trimmedValues);
+      await onSubmit(trimmedValues, files);
     } finally {
       setIsSubmitting(false);
     }
@@ -72,7 +76,7 @@ export default function KanbanWaitingForm({ mentionables, onSubmit, onCancel }: 
       <FieldGroup>
         <Field data-invalid={Boolean(formErrors.waitingOnWhat)}>
           <FieldLabel htmlFor="kanban-waiting-what">What are you waiting for?</FieldLabel>
-          <MentionTextarea
+          <RichNoteEditor
             id="kanban-waiting-what"
             value={formValues.waitingOnWhat}
             onChange={(fieldValue) => updateFormValue("waitingOnWhat", fieldValue)}
@@ -123,6 +127,13 @@ export default function KanbanWaitingForm({ mentionables, onSubmit, onCancel }: 
         </div>
         <FieldDescription>You&rsquo;ll get a reminder on the follow-up date.</FieldDescription>
       </FieldGroup>
+
+      {canAttachFiles && (
+        <Field>
+          <FieldLabel>Files (optional)</FieldLabel>
+          <UpdateFilesField files={files} onChangeFiles={setFiles} disabled={isSubmitting} />
+        </Field>
+      )}
 
       <div className="flex justify-end gap-2">
         {onCancel && (

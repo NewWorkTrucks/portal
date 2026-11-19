@@ -6,6 +6,19 @@ import { formatEstimatedTurnaround, formatKanbanDate } from "@/lib/kanban";
 import type { KanbanStatus, KanbanTask } from "@/types/kanban";
 import type { KanbanDailyUpdate, KanbanStageTransition } from "@/types/kanban-stages";
 
+/**
+ * One labelled part of a combined note, in the note format of src/lib/rich-note.ts. A value
+ * with its own lines or list goes under the label, so its formatting still shows.
+ */
+function formatNoteSection(label: string, value: string): string {
+  const startsBlockContent = value.includes("\n") || /^\s*([-*]|\d+\.) /.test(value);
+  return startsBlockContent ? `**${label}:**\n${value}` : `**${label}:** ${value}`;
+}
+
+function joinNoteSections(sections: string[]): string {
+  return sections.join("\n\n");
+}
+
 /** The audit-log note for a transition, built from the stage's required fields. */
 export function describeStageTransition(transition: KanbanStageTransition): string {
   switch (transition.status) {
@@ -14,28 +27,28 @@ export function describeStageTransition(transition: KanbanStageTransition): stri
     case "needs-review":
       return transition.note;
     case "waiting":
-      return [
-        `Waiting on: ${transition.waitingOnWhat}`,
-        `Who: ${transition.waitingOnWho}`,
-        `Contacted: ${formatKanbanDate(transition.contactedDate)} · Follow up: ${formatKanbanDate(transition.followUpDate)}`,
-      ].join("\n");
+      return joinNoteSections([
+        formatNoteSection("Waiting on", transition.waitingOnWhat),
+        formatNoteSection("Who", transition.waitingOnWho),
+        `**Contacted:** ${formatKanbanDate(transition.contactedDate)} · **Follow up:** ${formatKanbanDate(transition.followUpDate)}`,
+      ]);
     case "stuck":
-      return [
-        `Blocker: ${transition.blocker}`,
-        `Tried: ${transition.attempts}`,
-        `Help needed: ${transition.helpNeeded}`,
-      ].join("\n");
+      return joinNoteSections([
+        formatNoteSection("Blocker", transition.blocker),
+        formatNoteSection("Tried", transition.attempts),
+        formatNoteSection("Help needed", transition.helpNeeded),
+      ]);
     case "deferred":
-      return [
-        `Reason: ${transition.reason}`,
-        `New turnaround: ${formatEstimatedTurnaround(transition.estimatedTurnaround)} · Revisit: ${formatKanbanDate(transition.revisitDate)}`,
-      ].join("\n");
+      return joinNoteSections([
+        formatNoteSection("Reason", transition.reason),
+        `**New turnaround:** ${formatEstimatedTurnaround(transition.estimatedTurnaround)} · **Revisit:** ${formatKanbanDate(transition.revisitDate)}`,
+      ]);
     case "done":
-      return [
-        `Completed: ${transition.completedWork}`,
-        `Outcome: ${transition.outcome}`,
-        `Notes: ${transition.notes}`,
-      ].join("\n");
+      return joinNoteSections([
+        formatNoteSection("Completed", transition.completedWork),
+        formatNoteSection("Outcome", transition.outcome),
+        formatNoteSection("Notes", transition.notes),
+      ]);
   }
 }
 
@@ -123,11 +136,11 @@ export function describeDailyUpdate(dailyUpdate: KanbanDailyUpdate): string {
     KANBAN_DAILY_UPDATE_HEALTH_OPTIONS.find((option) => option.value === dailyUpdate.health)
       ?.label ?? dailyUpdate.health;
 
-  return [
-    `Progress (${healthLabel}): ${dailyUpdate.progress}`,
-    `Next: ${dailyUpdate.nextSteps}`,
-    `Issues: ${dailyUpdate.issues || "None"}`,
-  ].join("\n");
+  return joinNoteSections([
+    formatNoteSection(`Progress (${healthLabel})`, dailyUpdate.progress),
+    formatNoteSection("Next", dailyUpdate.nextSteps),
+    formatNoteSection("Issues", dailyUpdate.issues || "None"),
+  ]);
 }
 
 export function formatFileSize(sizeBytes: number): string {

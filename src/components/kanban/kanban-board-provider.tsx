@@ -20,6 +20,7 @@ import { KANBAN_CREATABLE_STATUSES } from "@/constants/kanban-stages";
 import { MOCK_MENTION_AUTO_INCLUDE_RULES, MOCK_MENTION_GROUPS } from "@/data/mock-mention-groups";
 import {
   findStatusOfDraggable,
+  findTaskById,
   formatEstimatedTurnaround,
   getColumnTitle,
   groupTasksByStatus,
@@ -131,24 +132,23 @@ export function KanbanBoardProvider({ initialTasks, children }: KanbanBoardProvi
       MOCK_MENTION_AUTO_INCLUDE_RULES,
     );
 
-    setAuditLogEntries((previousEntries) => [
-      createAuditLogEntry(
-        task,
-        action,
-        {
-          actorName: currentUser.name,
-          simulatedByName: isSimulatingUser ? signedInUser.name : undefined,
-        },
-        summary,
-        note,
-        mentionedNames,
-      ),
-      ...previousEntries,
-    ]);
+    const auditLogEntry = createAuditLogEntry(
+      task,
+      action,
+      {
+        actorName: currentUser.name,
+        simulatedByName: isSimulatingUser ? signedInUser.name : undefined,
+      },
+      summary,
+      note,
+      mentionedNames,
+    );
+    setAuditLogEntries((previousEntries) => [auditLogEntry, ...previousEntries]);
 
     if (mentionedNames.length > 0) {
       await notifyMentionedUsers(task.id, mentionedNames, note);
     }
+    return auditLogEntry.id;
   }
 
   async function createTask(formValues: KanbanTaskFormValues) {
@@ -266,10 +266,31 @@ export function KanbanBoardProvider({ initialTasks, children }: KanbanBoardProvi
     await recordAuditLogEntry(task, "archived", `Archived from ${getColumnTitle(task.status)}`, note);
   }
 
+  /** Adds files posted with an update to the card, linked to that update's activity entry. */
+  async function addUpdateFiles(task: KanbanTask, files: File[], activityId: string, note: string) {
+    if (files.length === 0) {
+      return;
+    }
+    assertKanbanPermission(
+      getTaskPermissions(task).canManageAttachments,
+      "You don't have permission to add attachments to this card.",
+    );
+    const uploadedAttachments = (await uploadKanbanAttachments(task.id, files, currentUser.name, note)).map(
+      (attachment) => ({ ...attachment, activityId }),
+    );
+    setTasksByStatus((previousTasksByStatus) => {
+      const latestTask = findTaskById(previousTasksByStatus, task.id);
+      return updateTaskById(previousTasksByStatus, task.id, {
+        attachments: [...uploadedAttachments, ...(latestTask?.attachments ?? [])],
+      });
+    });
+  }
+
   async function transitionTask(
     taskId: string,
     previousStatus: KanbanStatus,
     transition: KanbanStageTransition,
+    files: File[] = [],
   ) {
     const currentStatus = findStatusOfDraggable(tasksByStatus, taskId);
     const task = currentStatus
@@ -298,16 +319,17 @@ export function KanbanBoardProvider({ initialTasks, children }: KanbanBoardProvi
 
       return updateTaskById(tasksInNewColumn, taskId, stageTaskChanges);
     });
-    await recordAuditLogEntry(
+    const activityId = await recordAuditLogEntry(
       task,
       "moved",
       `${getColumnTitle(previousStatus)} → ${getColumnTitle(newStatus)}`,
       stageTaskChanges.latestNote ?? "",
       getStageAutoMentionHandles(transition, previousStatus),
     );
+    await addUpdateFiles(task, files, activityId, stageTaskChanges.latestNote ?? "");
   }
 
-  async function postDailyUpdate(task: KanbanTask, dailyUpdate: KanbanDailyUpdate) {
+  async function postDailyUpdate(task: KanbanTask, dailyUpdate: KanbanDailyUpdate, files: File[] = []) {
     assertTaskInCurrentBusiness(task);
     assertKanbanPermission(
       getTaskPermissions(task).canPostDailyUpdate,
@@ -323,10 +345,11 @@ export function KanbanBoardProvider({ initialTasks, children }: KanbanBoardProvi
         lastDailyUpdateAt: new Date().toISOString(),
       }),
     );
-    await recordAuditLogEntry(task, "daily-update", "Daily update", dailyUpdateNote);
+    const activityId = await recordAuditLogEntry(task, "daily-update", "Daily update", dailyUpdateNote);
+    await addUpdateFiles(task, files, activityId, dailyUpdateNote);
   }
 
-  async function addTaskUpdate(task: KanbanTask, note: string) {
+  async function addTaskUpdate(task: KanbanTask, note: string, files: File[] = []) {
     assertTaskInCurrentBusiness(task);
     assertKanbanPermission(
       getTaskPermissions(task).canAddUpdate,
@@ -337,7 +360,8 @@ export function KanbanBoardProvider({ initialTasks, children }: KanbanBoardProvi
     setTasksByStatus((previousTasksByStatus) =>
       updateTaskById(previousTasksByStatus, task.id, { latestNote: note }),
     );
-    await recordAuditLogEntry(task, "update", `Posted in ${getColumnTitle(task.status)}`, note);
+    const activityId = await recordAuditLogEntry(task, "update", `Posted in ${getColumnTitle(task.status)}`, note);
+    await addUpdateFiles(task, files, activityId, note);
   }
 
   async function attachFiles(task: KanbanTask, files: File[], note: string) {

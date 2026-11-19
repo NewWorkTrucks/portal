@@ -6,6 +6,8 @@ export type KanbanAttachment = {
   mimeType: string;
   uploadedByName: string;
   uploadedAt: string;
+  /** The activity entry (update, daily update or move) it was posted with, if any. */
+  activityId?: string;
   /** Where to download it. A local object URL until Supabase Storage is connected. */
   url: string;
 };

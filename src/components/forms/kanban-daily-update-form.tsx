@@ -1,9 +1,10 @@
 "use client";
 
 import { type FormEvent, useState } from "react";
-import MentionTextarea from "@/components/mention-textarea";
+import RichNoteEditor from "@/components/rich-note-editor";
 import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
+import UpdateFilesField from "@/components/update-files-field";
 import {
   Select,
   SelectContent,
@@ -17,7 +18,9 @@ import type { Mentionable } from "@/types/mention";
 
 type KanbanDailyUpdateFormProps = {
   mentionables: Mentionable[];
-  onSubmit: (values: KanbanDailyUpdate) => void | Promise<void>;
+  onSubmit: (values: KanbanDailyUpdate, files: File[]) => void | Promise<void>;
+  /** Shows "Add files". Only the card owner, coordinators and admins can attach files (E1-4). */
+  canAttachFiles?: boolean;
   onCancel?: () => void;
 };
 
@@ -27,6 +30,7 @@ type KanbanDailyUpdateErrors = Partial<Record<"progress" | "nextSteps", string>>
 export default function KanbanDailyUpdateForm({
   mentionables,
   onSubmit,
+  canAttachFiles = false,
   onCancel,
 }: KanbanDailyUpdateFormProps) {
   const [formValues, setFormValues] = useState<KanbanDailyUpdate>({
@@ -37,6 +41,7 @@ export default function KanbanDailyUpdateForm({
   });
   const [formErrors, setFormErrors] = useState<KanbanDailyUpdateErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [files, setFiles] = useState<File[]>([]);
 
   function updateFormValue<FieldName extends keyof KanbanDailyUpdate>(
     fieldName: FieldName,
@@ -68,7 +73,7 @@ export default function KanbanDailyUpdateForm({
         progress: formValues.progress.trim(),
         nextSteps: formValues.nextSteps.trim(),
         issues: formValues.issues.trim(),
-      });
+      }, files);
     } finally {
       setIsSubmitting(false);
     }
@@ -79,7 +84,7 @@ export default function KanbanDailyUpdateForm({
       <FieldGroup>
         <Field data-invalid={Boolean(formErrors.progress)}>
           <FieldLabel htmlFor="kanban-daily-update-progress">Progress</FieldLabel>
-          <MentionTextarea
+          <RichNoteEditor
             id="kanban-daily-update-progress"
             value={formValues.progress}
             onChange={(fieldValue) => updateFormValue("progress", fieldValue)}
@@ -117,7 +122,7 @@ export default function KanbanDailyUpdateForm({
 
         <Field data-invalid={Boolean(formErrors.nextSteps)}>
           <FieldLabel htmlFor="kanban-daily-update-next">Next steps</FieldLabel>
-          <MentionTextarea
+          <RichNoteEditor
             id="kanban-daily-update-next"
             value={formValues.nextSteps}
             onChange={(fieldValue) => updateFormValue("nextSteps", fieldValue)}
@@ -131,7 +136,7 @@ export default function KanbanDailyUpdateForm({
 
         <Field>
           <FieldLabel htmlFor="kanban-daily-update-issues">Issues (optional)</FieldLabel>
-          <MentionTextarea
+          <RichNoteEditor
             id="kanban-daily-update-issues"
             value={formValues.issues}
             onChange={(fieldValue) => updateFormValue("issues", fieldValue)}
@@ -141,6 +146,13 @@ export default function KanbanDailyUpdateForm({
           />
         </Field>
       </FieldGroup>
+
+      {canAttachFiles && (
+        <Field>
+          <FieldLabel>Files (optional)</FieldLabel>
+          <UpdateFilesField files={files} onChangeFiles={setFiles} disabled={isSubmitting} />
+        </Field>
+      )}
 
       <div className="flex justify-end gap-2">
         {onCancel && (

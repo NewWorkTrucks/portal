@@ -368,7 +368,7 @@ export default function KanbanBoard() {
     }
   }
 
-  async function handleConfirmNoteOperation(note: string) {
+  async function handleConfirmNoteOperation(note: string, files: File[]) {
     if (!pendingNoteOperation) {
       return;
     }
@@ -381,7 +381,7 @@ export default function KanbanBoard() {
         await archiveTask(pendingNoteOperation.task, note);
         break;
       case "add-update":
-        await addTaskUpdate(pendingNoteOperation.task, note);
+        await addTaskUpdate(pendingNoteOperation.task, note, files);
         break;
       case "attach-files":
         await attachFiles(pendingNoteOperation.task, pendingNoteOperation.files, note);
@@ -394,21 +394,21 @@ export default function KanbanBoard() {
     closeNoteDialogAfterSave();
   }
 
-  async function handleConfirmStageTransition(transition: KanbanStageTransition) {
+  async function handleConfirmStageTransition(transition: KanbanStageTransition, files: File[]) {
     if (pendingNoteOperation?.kind !== "move") {
       return;
     }
 
-    await transitionTask(pendingNoteOperation.task.id, pendingNoteOperation.previousStatus, transition);
+    await transitionTask(pendingNoteOperation.task.id, pendingNoteOperation.previousStatus, transition, files);
     closeNoteDialogAfterSave();
   }
 
-  async function handleConfirmDailyUpdate(dailyUpdate: KanbanDailyUpdate) {
+  async function handleConfirmDailyUpdate(dailyUpdate: KanbanDailyUpdate, files: File[]) {
     if (pendingNoteOperation?.kind !== "daily-update") {
       return;
     }
 
-    await postDailyUpdate(pendingNoteOperation.task, dailyUpdate);
+    await postDailyUpdate(pendingNoteOperation.task, dailyUpdate, files);
     closeNoteDialogAfterSave();
   }
 
@@ -483,6 +483,10 @@ export default function KanbanBoard() {
     pendingNoteOperation?.kind === "move" || pendingNoteOperation?.kind === "daily-update"
       ? pendingNoteOperation
       : null;
+  // Attaching files to an update follows the card's attachment rule (owner, coordinator, admin).
+  const canAttachFilesToPendingTask = pendingNoteOperation
+    ? getTaskPermissions(pendingNoteOperation.task).canManageAttachments
+    : false;
   const noteOnlyOperation: KanbanNoteOnlyOperation | null =
     pendingNoteOperation && !stageOperation ? (pendingNoteOperation as KanbanNoteOnlyOperation) : null;
 
@@ -589,6 +593,7 @@ export default function KanbanBoard() {
         operation={noteOnlyOperation}
         isOpen={isNoteDialogOpen && noteOnlyOperation !== null}
         onOpenChange={handleNoteDialogOpenChange}
+        canAttachFiles={canAttachFilesToPendingTask}
         onConfirm={handleConfirmNoteOperation}
       />
       <KanbanStageTransitionDialog
@@ -597,6 +602,7 @@ export default function KanbanBoard() {
         mentionables={mentionables}
         isOpen={isNoteDialogOpen && stageOperation !== null}
         onOpenChange={handleNoteDialogOpenChange}
+        canAttachFiles={canAttachFilesToPendingTask}
         onConfirmTransition={handleConfirmStageTransition}
         onConfirmDailyUpdate={handleConfirmDailyUpdate}
       />

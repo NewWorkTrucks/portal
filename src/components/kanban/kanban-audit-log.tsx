@@ -3,7 +3,7 @@
 import { Archive, Bell } from "lucide-react";
 import { useCurrentUser } from "@/components/current-user-provider";
 import { useKanbanBoard } from "@/components/kanban/kanban-board-provider";
-import MentionText from "@/components/mention-text";
+import RichNoteText from "@/components/rich-note-text";
 import UserAvatar from "@/components/user-avatar";
 import { AUDIT_LOG_ACTION_DISPLAY } from "@/constants/audit-log-actions";
 import { getColumnTitle } from "@/lib/kanban";
@@ -69,9 +69,9 @@ export default function KanbanAuditLog() {
                       </td>
                       <td className="px-3 py-2 font-medium">{auditLogEntry.taskTitle}</td>
                       <td className="px-3 py-2 text-muted-foreground">{auditLogEntry.summary}</td>
-                      <td className="px-3 py-2 whitespace-pre-line">
-                        <MentionText
-                          text={auditLogEntry.note}
+                      <td className="px-3 py-2">
+                        <RichNoteText
+                          note={auditLogEntry.note}
                           mentionables={mentionables}
                           currentUserName={currentUser.name}
                         />

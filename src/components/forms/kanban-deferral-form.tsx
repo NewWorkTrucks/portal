@@ -2,10 +2,11 @@
 
 import { BellRing } from "lucide-react";
 import { type FormEvent, useState } from "react";
-import MentionTextarea from "@/components/mention-textarea";
+import RichNoteEditor from "@/components/rich-note-editor";
 import TurnaroundInput from "@/components/turnaround-input";
 import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
+import UpdateFilesField from "@/components/update-files-field";
 import { Input } from "@/components/ui/input";
 import { getTodayIsoDate, parseTurnaroundAmount } from "@/lib/kanban";
 import type { KanbanEstimatedTurnaround } from "@/types/kanban";
@@ -18,7 +19,9 @@ type KanbanDeferralFormProps = {
   isCantStartDeferral: boolean;
   previousDeferralCount: number;
   mentionables: Mentionable[];
-  onSubmit: (values: KanbanDeferralValues) => void | Promise<void>;
+  onSubmit: (values: KanbanDeferralValues, files: File[]) => void | Promise<void>;
+  /** Shows "Add files". Only the card owner, coordinators and admins can attach files (E1-4). */
+  canAttachFiles?: boolean;
   onCancel?: () => void;
 };
 
@@ -31,6 +34,7 @@ export default function KanbanDeferralForm({
   previousDeferralCount,
   mentionables,
   onSubmit,
+  canAttachFiles = false,
   onCancel,
 }: KanbanDeferralFormProps) {
   const [reason, setReason] = useState("");
@@ -39,6 +43,7 @@ export default function KanbanDeferralForm({
   const [revisitDate, setRevisitDate] = useState("");
   const [formErrors, setFormErrors] = useState<KanbanDeferralErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [files, setFiles] = useState<File[]>([]);
 
   async function handleSubmitForm(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -69,7 +74,7 @@ export default function KanbanDeferralForm({
         reason: reason.trim(),
         estimatedTurnaround: { amount: turnaroundAmount, unit: turnaroundUnit },
         revisitDate,
-      });
+      }, files);
     } finally {
       setIsSubmitting(false);
     }
@@ -82,7 +87,7 @@ export default function KanbanDeferralForm({
           <FieldLabel htmlFor="kanban-deferral-reason">
             {isCantStartDeferral ? "Why can't this start?" : "Why defer it?"}
           </FieldLabel>
-          <MentionTextarea
+          <RichNoteEditor
             id="kanban-deferral-reason"
             value={reason}
             onChange={(reasonValue) => {
@@ -142,6 +147,13 @@ export default function KanbanDeferralForm({
           <BellRing aria-hidden className="mt-0.5 size-3.5 shrink-0" />
           Deferring a card that hasn&rsquo;t started notifies @Leadership.
         </p>
+      )}
+
+      {canAttachFiles && (
+        <Field>
+          <FieldLabel>Files (optional)</FieldLabel>
+          <UpdateFilesField files={files} onChangeFiles={setFiles} disabled={isSubmitting} />
+        </Field>
       )}
 
       <div className="flex justify-end gap-2">

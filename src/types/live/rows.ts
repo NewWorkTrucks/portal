@@ -61,6 +61,8 @@ export type KanbanAttachmentRow = {
   storage_path: string;
   uploaded_by: string | null;
   uploaded_at: string;
+  /** The update it was posted with; null for files added from the Attachments section. */
+  activity_id: string | null;
 };
 
 export type KanbanActivityRow = {

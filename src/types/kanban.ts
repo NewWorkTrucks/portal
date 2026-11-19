@@ -155,11 +155,13 @@ export type KanbanBoardContextValue = {
     taskId: string,
     previousStatus: KanbanStatus,
     transition: KanbanStageTransition,
+    files?: File[],
   ) => Promise<void>;
   /** Saves a card's new position within its column after a drag (live mode). */
   reorderTask: (taskId: string, orderedTaskIds: string[]) => Promise<void>;
-  postDailyUpdate: (task: KanbanTask, dailyUpdate: KanbanDailyUpdate) => Promise<void>;
-  addTaskUpdate: (task: KanbanTask, note: string) => Promise<void>;
+  /** `files` are posted with the update and shown under it in the activity log (E1-4). */
+  postDailyUpdate: (task: KanbanTask, dailyUpdate: KanbanDailyUpdate, files?: File[]) => Promise<void>;
+  addTaskUpdate: (task: KanbanTask, note: string, files?: File[]) => Promise<void>;
   attachFiles: (task: KanbanTask, files: File[], note: string) => Promise<void>;
   removeAttachment: (task: KanbanTask, attachment: KanbanAttachment, note: string) => Promise<void>;
   /** What the current user may do with a card, based on their role and ownership (E4-1). */

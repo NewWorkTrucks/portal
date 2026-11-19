@@ -29,8 +29,10 @@ type KanbanStageTransitionDialogProps = {
   mentionables: Mentionable[];
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  onConfirmTransition: (transition: KanbanStageTransition) => void | Promise<void>;
-  onConfirmDailyUpdate: (dailyUpdate: KanbanDailyUpdate) => void | Promise<void>;
+  /** Whether the current user may attach files to this card (owner, coordinator, admin). */
+  canAttachFiles: boolean;
+  onConfirmTransition: (transition: KanbanStageTransition, files: File[]) => void | Promise<void>;
+  onConfirmDailyUpdate: (dailyUpdate: KanbanDailyUpdate, files: File[]) => void | Promise<void>;
 };
 
 function TaskTitle({ title }: { title: string }) {
@@ -44,6 +46,7 @@ export default function KanbanStageTransitionDialog({
   mentionables,
   isOpen,
   onOpenChange,
+  canAttachFiles,
   onConfirmTransition,
   onConfirmDailyUpdate,
 }: KanbanStageTransitionDialogProps) {
@@ -70,6 +73,7 @@ export default function KanbanStageTransitionDialog({
           <KanbanDailyUpdateForm
             mentionables={mentionables}
             onSubmit={onConfirmDailyUpdate}
+            canAttachFiles={canAttachFiles}
             onCancel={handleCancel}
           />
         ),
@@ -93,7 +97,8 @@ export default function KanbanStageTransitionDialog({
             <KanbanReviewRequestForm
               reviewerOptions={reviewerOptions}
               mentionables={mentionables}
-              onSubmit={(values) => onConfirmTransition({ status: "needs-review", ...values })}
+              onSubmit={(values, files) => onConfirmTransition({ status: "needs-review", ...values }, files)}
+              canAttachFiles={canAttachFiles}
               onCancel={handleCancel}
             />
           ),
@@ -105,7 +110,8 @@ export default function KanbanStageTransitionDialog({
           form: (
             <KanbanWaitingForm
               mentionables={mentionables}
-              onSubmit={(values) => onConfirmTransition({ status: "waiting", ...values })}
+              onSubmit={(values, files) => onConfirmTransition({ status: "waiting", ...values }, files)}
+              canAttachFiles={canAttachFiles}
               onCancel={handleCancel}
             />
           ),
@@ -117,7 +123,8 @@ export default function KanbanStageTransitionDialog({
           form: (
             <KanbanStuckForm
               mentionables={mentionables}
-              onSubmit={(values) => onConfirmTransition({ status: "stuck", ...values })}
+              onSubmit={(values, files) => onConfirmTransition({ status: "stuck", ...values }, files)}
+              canAttachFiles={canAttachFiles}
               onCancel={handleCancel}
             />
           ),
@@ -132,7 +139,8 @@ export default function KanbanStageTransitionDialog({
               isCantStartDeferral={previousStatus === "not-started"}
               previousDeferralCount={task.deferralCount}
               mentionables={mentionables}
-              onSubmit={(values) => onConfirmTransition({ status: "deferred", ...values })}
+              onSubmit={(values, files) => onConfirmTransition({ status: "deferred", ...values }, files)}
+              canAttachFiles={canAttachFiles}
               onCancel={handleCancel}
             />
           ),
@@ -151,7 +159,8 @@ export default function KanbanStageTransitionDialog({
             <KanbanCompletionForm
               mentionables={mentionables}
               submitLabel={isReviewDecision ? "Approve" : "Mark as Done"}
-              onSubmit={(values) => onConfirmTransition({ status: "done", ...values })}
+              onSubmit={(values, files) => onConfirmTransition({ status: "done", ...values }, files)}
+              canAttachFiles={canAttachFiles}
               onCancel={handleCancel}
             />
           ),
@@ -178,7 +187,8 @@ export default function KanbanStageTransitionDialog({
               mentionables={mentionables}
               submitLabel={isReviewDecision ? "Return" : "Move task"}
               SubmitIcon={isReviewDecision ? CornerUpLeft : MoveRight}
-              onSubmit={(note) => onConfirmTransition({ status: newStatus, note })}
+              onSubmit={(note, files) => onConfirmTransition({ status: newStatus, note }, files)}
+              canAttachFiles={canAttachFiles}
               onCancel={handleCancel}
             />
           ),

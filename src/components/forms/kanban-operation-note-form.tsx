@@ -4,7 +4,8 @@ import type { LucideIcon } from "lucide-react";
 import { type FormEvent, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
-import MentionTextarea from "@/components/mention-textarea";
+import UpdateFilesField from "@/components/update-files-field";
+import RichNoteEditor from "@/components/rich-note-editor";
 import type { Mentionable } from "@/types/mention";
 
 type KanbanOperationNoteFormProps = {
@@ -14,7 +15,9 @@ type KanbanOperationNoteFormProps = {
   submitLabel: string;
   SubmitIcon?: LucideIcon;
   submitVariant?: "default" | "destructive";
-  onSubmit: (note: string) => void | Promise<void>;
+  onSubmit: (note: string, files: File[]) => void | Promise<void>;
+  /** Shows "Add files". Only the card owner, coordinators and admins can attach files (E1-4). */
+  canAttachFiles?: boolean;
   onCancel?: () => void;
 };
 
@@ -30,11 +33,13 @@ export default function KanbanOperationNoteForm({
   SubmitIcon,
   submitVariant = "default",
   onSubmit,
+  canAttachFiles = false,
   onCancel,
 }: KanbanOperationNoteFormProps) {
   const [note, setNote] = useState("");
   const [noteError, setNoteError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [files, setFiles] = useState<File[]>([]);
 
   async function handleSubmitForm(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -48,7 +53,7 @@ export default function KanbanOperationNoteForm({
 
     setIsSubmitting(true);
     try {
-      await onSubmit(trimmedNote);
+      await onSubmit(trimmedNote, files);
     } finally {
       setIsSubmitting(false);
     }
@@ -58,7 +63,7 @@ export default function KanbanOperationNoteForm({
     <form onSubmit={handleSubmitForm} noValidate className="flex flex-col gap-6">
       <Field data-invalid={Boolean(noteError)}>
         <FieldLabel htmlFor="kanban-operation-note">{noteLabel}</FieldLabel>
-        <MentionTextarea
+        <RichNoteEditor
           id="kanban-operation-note"
           value={note}
           onChange={(noteValue) => {
@@ -74,6 +79,13 @@ export default function KanbanOperationNoteForm({
         <FieldDescription>Required. Type @ to mention someone. Saved to the audit log.</FieldDescription>
         <FieldError>{noteError}</FieldError>
       </Field>
+
+      {canAttachFiles && (
+        <Field>
+          <FieldLabel>Files (optional)</FieldLabel>
+          <UpdateFilesField files={files} onChangeFiles={setFiles} disabled={isSubmitting} />
+        </Field>
+      )}
 
       <div className="flex justify-end gap-2">
         {onCancel && (

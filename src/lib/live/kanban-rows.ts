@@ -27,6 +27,7 @@ export function toKanbanAttachment(
     mimeType: attachmentRow.mime_type,
     uploadedByName: attachmentRow.uploaded_by ? (nameByUserId.get(attachmentRow.uploaded_by) ?? "Someone") : "Someone",
     uploadedAt: attachmentRow.uploaded_at,
+    activityId: attachmentRow.activity_id ?? undefined,
     url: signedUrl,
   };
 }

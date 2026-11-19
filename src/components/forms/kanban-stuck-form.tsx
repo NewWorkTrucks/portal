@@ -2,15 +2,18 @@
 
 import { TriangleAlert } from "lucide-react";
 import { type FormEvent, useState } from "react";
-import MentionTextarea from "@/components/mention-textarea";
+import RichNoteEditor from "@/components/rich-note-editor";
 import { Button } from "@/components/ui/button";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
+import UpdateFilesField from "@/components/update-files-field";
 import type { KanbanStuckValues } from "@/types/kanban-stages";
 import type { Mentionable } from "@/types/mention";
 
 type KanbanStuckFormProps = {
   mentionables: Mentionable[];
-  onSubmit: (values: KanbanStuckValues) => void | Promise<void>;
+  onSubmit: (values: KanbanStuckValues, files: File[]) => void | Promise<void>;
+  /** Shows "Add files". Only the card owner, coordinators and admins can attach files (E1-4). */
+  canAttachFiles?: boolean;
   onCancel?: () => void;
 };
 
@@ -36,7 +39,7 @@ const STUCK_FIELDS: { name: keyof KanbanStuckValues; label: string; placeholder:
 ];
 
 /** E2-7: raising a blocker. Confirming notifies Leadership. */
-export default function KanbanStuckForm({ mentionables, onSubmit, onCancel }: KanbanStuckFormProps) {
+export default function KanbanStuckForm({ mentionables, onSubmit, canAttachFiles = false, onCancel }: KanbanStuckFormProps) {
   const [formValues, setFormValues] = useState<KanbanStuckValues>({
     blocker: "",
     attempts: "",
@@ -44,6 +47,7 @@ export default function KanbanStuckForm({ mentionables, onSubmit, onCancel }: Ka
   });
   const [formErrors, setFormErrors] = useState<Partial<Record<keyof KanbanStuckValues, string>>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [files, setFiles] = useState<File[]>([]);
 
   async function handleSubmitForm(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -65,7 +69,7 @@ export default function KanbanStuckForm({ mentionables, onSubmit, onCancel }: Ka
         blocker: formValues.blocker.trim(),
         attempts: formValues.attempts.trim(),
         helpNeeded: formValues.helpNeeded.trim(),
-      });
+      }, files);
     } finally {
       setIsSubmitting(false);
     }
@@ -77,7 +81,7 @@ export default function KanbanStuckForm({ mentionables, onSubmit, onCancel }: Ka
         {STUCK_FIELDS.map((stuckField, fieldIndex) => (
           <Field key={stuckField.name} data-invalid={Boolean(formErrors[stuckField.name])}>
             <FieldLabel htmlFor={`kanban-stuck-${stuckField.name}`}>{stuckField.label}</FieldLabel>
-            <MentionTextarea
+            <RichNoteEditor
               id={`kanban-stuck-${stuckField.name}`}
               value={formValues[stuckField.name]}
               onChange={(fieldValue) => {
@@ -99,6 +103,13 @@ export default function KanbanStuckForm({ mentionables, onSubmit, onCancel }: Ka
         <TriangleAlert aria-hidden className="mt-0.5 size-3.5 shrink-0" />
         Marking this card Stuck notifies @Leadership.
       </p>
+
+      {canAttachFiles && (
+        <Field>
+          <FieldLabel>Files (optional)</FieldLabel>
+          <UpdateFilesField files={files} onChangeFiles={setFiles} disabled={isSubmitting} />
+        </Field>
+      )}
 
       <div className="flex justify-end gap-2">
         {onCancel && (

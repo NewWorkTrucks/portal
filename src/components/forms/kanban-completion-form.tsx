@@ -2,16 +2,19 @@
 
 import { CircleCheck } from "lucide-react";
 import { type FormEvent, useState } from "react";
-import MentionTextarea from "@/components/mention-textarea";
+import RichNoteEditor from "@/components/rich-note-editor";
 import { Button } from "@/components/ui/button";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
+import UpdateFilesField from "@/components/update-files-field";
 import type { KanbanCompletionValues } from "@/types/kanban-stages";
 import type { Mentionable } from "@/types/mention";
 
 type KanbanCompletionFormProps = {
   mentionables: Mentionable[];
   submitLabel?: string;
-  onSubmit: (values: KanbanCompletionValues) => void | Promise<void>;
+  onSubmit: (values: KanbanCompletionValues, files: File[]) => void | Promise<void>;
+  /** Shows "Add files". Only the card owner, coordinators and admins can attach files (E1-4). */
+  canAttachFiles?: boolean;
   onCancel?: () => void;
 };
 
@@ -46,6 +49,7 @@ export default function KanbanCompletionForm({
   mentionables,
   submitLabel = "Mark as Done",
   onSubmit,
+  canAttachFiles = false,
   onCancel,
 }: KanbanCompletionFormProps) {
   const [formValues, setFormValues] = useState<KanbanCompletionValues>({
@@ -55,6 +59,7 @@ export default function KanbanCompletionForm({
   });
   const [formErrors, setFormErrors] = useState<Partial<Record<keyof KanbanCompletionValues, string>>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [files, setFiles] = useState<File[]>([]);
 
   async function handleSubmitForm(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -76,7 +81,7 @@ export default function KanbanCompletionForm({
         completedWork: formValues.completedWork.trim(),
         outcome: formValues.outcome.trim(),
         notes: formValues.notes.trim(),
-      });
+      }, files);
     } finally {
       setIsSubmitting(false);
     }
@@ -90,7 +95,7 @@ export default function KanbanCompletionForm({
             <FieldLabel htmlFor={`kanban-completion-${completionField.name}`}>
               {completionField.label}
             </FieldLabel>
-            <MentionTextarea
+            <RichNoteEditor
               id={`kanban-completion-${completionField.name}`}
               value={formValues[completionField.name]}
               onChange={(fieldValue) => {
@@ -107,6 +112,13 @@ export default function KanbanCompletionForm({
           </Field>
         ))}
       </FieldGroup>
+
+      {canAttachFiles && (
+        <Field>
+          <FieldLabel>Files (optional)</FieldLabel>
+          <UpdateFilesField files={files} onChangeFiles={setFiles} disabled={isSubmitting} />
+        </Field>
+      )}
 
       <div className="flex justify-end gap-2">
         {onCancel && (

@@ -17,6 +17,7 @@ import {
 import UserAvatar from "@/components/user-avatar";
 import { formatAuditLogTimestamp } from "@/lib/kanban-audit-log";
 import { describeNotification } from "@/lib/notifications";
+import { toPlainNoteText } from "@/lib/rich-note";
 import { cn } from "@/lib/utils";
 import type { PortalNotification } from "@/types/notification";
 
@@ -119,7 +120,7 @@ export default function NotificationsMenu() {
                     </span>
                     {notification.note && (
                       <span className="line-clamp-2 text-xs text-muted-foreground">
-                        {notification.note}
+                        {toPlainNoteText(notification.note)}
                       </span>
                     )}
                     <span className="text-[11px] text-muted-foreground">

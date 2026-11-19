@@ -4,7 +4,7 @@ import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } fro
 import { useCurrentUser } from "@/components/current-user-provider";
 import { KanbanBoardContext } from "@/components/kanban/kanban-board-provider";
 import { MAX_ATTACHMENT_SIZE_BYTES } from "@/constants/attachments";
-import { findStatusOfDraggable, groupTasksByStatus } from "@/lib/kanban";
+import { findStatusOfDraggable, findTaskById, groupTasksByStatus } from "@/lib/kanban";
 import { getKanbanTaskPermissions, getTaskMoveDeniedReason } from "@/lib/kanban-permissions";
 import { describeDailyUpdate, describeStageTransition, formatFileSize } from "@/lib/kanban-stages";
 import {
@@ -174,6 +174,37 @@ export default function LiveKanbanBoardProvider({ children }: LiveKanbanBoardPro
     await loadBoard();
   }
 
+  /**
+   * Uploads files to the card's Storage folder for an update, a daily update or a move, and
+   * returns what the database function needs to record them. Null when an upload failed, so
+   * the update isn't posted without its files.
+   */
+  async function uploadUpdateFiles(task: Pick<KanbanTask, "id" | "businessId">, files: File[]) {
+    if (!supabase || files.length === 0) {
+      return [];
+    }
+    const oversizedFile = files.find((file) => file.size > MAX_ATTACHMENT_SIZE_BYTES);
+    if (oversizedFile) {
+      window.alert(`${oversizedFile.name} is over the ${formatFileSize(MAX_ATTACHMENT_SIZE_BYTES)} limit.`);
+      return null;
+    }
+
+    const uploadedFiles: { fileName: string; sizeBytes: number; mimeType: string; storagePath: string }[] = [];
+    for (const file of files) {
+      const storagePath = `${task.businessId}/${task.id}/${crypto.randomUUID()}-${toSafeFileName(file.name)}`;
+      const { error: uploadError } = await supabase.storage
+        .from(ATTACHMENT_BUCKET)
+        .upload(storagePath, file, { contentType: file.type || undefined });
+      if (uploadError) {
+        // TODO: Replace window.alert with a toast once the app has one.
+        window.alert(`Couldn't upload ${file.name}, so the update wasn't posted: ${uploadError.message}`);
+        return null;
+      }
+      uploadedFiles.push({ fileName: file.name, sizeBytes: file.size, mimeType: file.type, storagePath });
+    }
+    return uploadedFiles;
+  }
+
   function getMentionedUserIds(note: string): string[] {
     // The database adds groups named by policy and the auto-include rules (E3-2) itself.
     return resolveMentionedNames(note, mentionables, [])
@@ -246,8 +277,19 @@ export default function LiveKanbanBoardProvider({ children }: LiveKanbanBoardPro
     });
   }
 
-  async function transitionTask(taskId: string, _previousStatus: KanbanStatus, transition: KanbanStageTransition) {
+  async function transitionTask(
+    taskId: string,
+    _previousStatus: KanbanStatus,
+    transition: KanbanStageTransition,
+    files: File[] = [],
+  ) {
     const note = describeStageTransition(transition);
+    const task = findTaskById(tasksByStatus, taskId);
+    const uploadedFiles = task ? await uploadUpdateFiles(task, files) : [];
+    if (uploadedFiles === null) {
+      await loadBoard();
+      return;
+    }
     // A drag already placed the card in its new column; save that spot. Buttons (approve,
     // return) leave the card where it was, and the database puts it at the top.
     const statusOnBoard = findStatusOfDraggable(tasksByStatus, taskId);
@@ -263,6 +305,7 @@ export default function LiveKanbanBoardProvider({ children }: LiveKanbanBoardPro
       p_note: note,
       p_mentioned_user_ids: getMentionedUserIds(note),
       p_position: position,
+      p_attachments: uploadedFiles,
     });
   }
 
@@ -283,8 +326,12 @@ export default function LiveKanbanBoardProvider({ children }: LiveKanbanBoardPro
     });
   }
 
-  async function postDailyUpdate(task: KanbanTask, dailyUpdate: KanbanDailyUpdate) {
+  async function postDailyUpdate(task: KanbanTask, dailyUpdate: KanbanDailyUpdate, files: File[] = []) {
     const note = describeDailyUpdate(dailyUpdate);
+    const uploadedFiles = await uploadUpdateFiles(task, files);
+    if (uploadedFiles === null) {
+      return;
+    }
     await callKanbanFunction("kanban_post_daily_update", {
       p_task_id: task.id,
       p_progress: dailyUpdate.progress,
@@ -293,14 +340,20 @@ export default function LiveKanbanBoardProvider({ children }: LiveKanbanBoardPro
       p_issues: dailyUpdate.issues,
       p_note: note,
       p_mentioned_user_ids: getMentionedUserIds(note),
+      p_attachments: uploadedFiles,
     });
   }
 
-  async function addTaskUpdate(task: KanbanTask, note: string) {
+  async function addTaskUpdate(task: KanbanTask, note: string, files: File[] = []) {
+    const uploadedFiles = await uploadUpdateFiles(task, files);
+    if (uploadedFiles === null) {
+      return;
+    }
     await callKanbanFunction("kanban_post_task_update", {
       p_task_id: task.id,
       p_note: note,
       p_mentioned_user_ids: getMentionedUserIds(note),
+      p_attachments: uploadedFiles,
     });
   }
 

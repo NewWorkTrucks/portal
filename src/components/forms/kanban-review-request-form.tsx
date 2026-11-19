@@ -1,9 +1,10 @@
 "use client";
 
 import { type FormEvent, useState } from "react";
-import MentionTextarea from "@/components/mention-textarea";
+import RichNoteEditor from "@/components/rich-note-editor";
 import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
+import UpdateFilesField from "@/components/update-files-field";
 import {
   Select,
   SelectContent,
@@ -19,7 +20,9 @@ import type { TeamMember } from "@/types/team";
 type KanbanReviewRequestFormProps = {
   reviewerOptions: TeamMember[];
   mentionables: Mentionable[];
-  onSubmit: (values: KanbanReviewRequestValues) => void | Promise<void>;
+  onSubmit: (values: KanbanReviewRequestValues, files: File[]) => void | Promise<void>;
+  /** Shows "Add files". Only the card owner, coordinators and admins can attach files (E1-4). */
+  canAttachFiles?: boolean;
   onCancel?: () => void;
 };
 
@@ -28,12 +31,14 @@ export default function KanbanReviewRequestForm({
   reviewerOptions,
   mentionables,
   onSubmit,
+  canAttachFiles = false,
   onCancel,
 }: KanbanReviewRequestFormProps) {
   const [reviewerName, setReviewerName] = useState("");
   const [note, setNote] = useState("");
   const [formErrors, setFormErrors] = useState<Partial<Record<keyof KanbanReviewRequestValues, string>>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [files, setFiles] = useState<File[]>([]);
 
   async function handleSubmitForm(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -52,7 +57,7 @@ export default function KanbanReviewRequestForm({
 
     setIsSubmitting(true);
     try {
-      await onSubmit({ reviewerName, note: note.trim() });
+      await onSubmit({ reviewerName, note: note.trim() }, files);
     } finally {
       setIsSubmitting(false);
     }
@@ -92,7 +97,7 @@ export default function KanbanReviewRequestForm({
 
         <Field data-invalid={Boolean(formErrors.note)}>
           <FieldLabel htmlFor="kanban-review-note">What should they check?</FieldLabel>
-          <MentionTextarea
+          <RichNoteEditor
             id="kanban-review-note"
             value={note}
             onChange={(noteValue) => {
@@ -107,6 +112,13 @@ export default function KanbanReviewRequestForm({
           <FieldError>{formErrors.note}</FieldError>
         </Field>
       </FieldGroup>
+
+      {canAttachFiles && (
+        <Field>
+          <FieldLabel>Files (optional)</FieldLabel>
+          <UpdateFilesField files={files} onChangeFiles={setFiles} disabled={isSubmitting} />
+        </Field>
+      )}
 
       <div className="flex justify-end gap-2">
         {onCancel && (

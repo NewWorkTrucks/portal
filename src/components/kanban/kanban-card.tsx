@@ -38,6 +38,7 @@ import {
 import { useCurrentUser } from "@/components/current-user-provider";
 import { useKanbanBoard } from "@/components/kanban/kanban-board-provider";
 import MentionText from "@/components/mention-text";
+import { toPlainNoteText } from "@/lib/rich-note";
 import UserAvatar from "@/components/user-avatar";
 import { KANBAN_ROLE_DEFINITIONS } from "@/constants/kanban-role-capabilities";
 import { cn } from "@/lib/utils";
@@ -98,9 +99,9 @@ export function KanbanCardContent({ task, isOverlay = false }: KanbanCardContent
       {task.latestNote && (
         <p className="flex gap-1.5 rounded-md bg-muted px-2 py-1.5 text-xs text-muted-foreground">
           <MessageSquareText aria-hidden className="mt-0.5 size-3 shrink-0" />
-          <span className="line-clamp-2 whitespace-pre-line">
+          <span className="line-clamp-2">
             <MentionText
-              text={task.latestNote}
+              text={toPlainNoteText(task.latestNote)}
               mentionables={mentionables}
               currentUserName={currentUser.name}
             />

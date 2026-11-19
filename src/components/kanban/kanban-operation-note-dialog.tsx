@@ -29,7 +29,9 @@ type KanbanOperationNoteDialogProps = {
   mentionables: Mentionable[];
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  onConfirm: (note: string) => void | Promise<void>;
+  /** Whether the current user may attach files to this card (owner, coordinator, admin). */
+  canAttachFiles: boolean;
+  onConfirm: (note: string, files: File[]) => void | Promise<void>;
 };
 
 type OperationDialogCopy = {
@@ -132,6 +134,7 @@ export default function KanbanOperationNoteDialog({
   mentionables,
   isOpen,
   onOpenChange,
+  canAttachFiles,
   onConfirm,
 }: KanbanOperationNoteDialogProps) {
   const operationDialogCopy = operation ? getOperationDialogCopy(operation) : null;
@@ -154,6 +157,8 @@ export default function KanbanOperationNoteDialog({
               SubmitIcon={operationDialogCopy.SubmitIcon}
               submitVariant={operationDialogCopy.submitVariant}
               onSubmit={onConfirm}
+              // Files go with updates; reassigning, archiving and attachment changes stay note-only.
+              canAttachFiles={operation.kind === "add-update" && canAttachFiles}
               mentionables={mentionables}
             onCancel={() => onOpenChange(false)}
             />

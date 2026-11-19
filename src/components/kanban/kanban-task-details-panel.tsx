@@ -22,7 +22,8 @@ import { type ReactNode, useMemo } from "react";
 import AttachmentPicker from "@/components/attachment-picker";
 import { useCurrentUser } from "@/components/current-user-provider";
 import { useKanbanBoard } from "@/components/kanban/kanban-board-provider";
-import MentionText from "@/components/mention-text";
+import KanbanActivityFiles from "@/components/kanban/kanban-activity-files";
+import RichNoteText from "@/components/rich-note-text";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -191,13 +192,12 @@ export default function KanbanTaskDetailsPanel({
                   <h3 id="task-details-latest-note" className="text-xs text-muted-foreground">
                     Latest note
                   </h3>
-                  <p className="rounded-md bg-muted px-3 py-2 text-sm whitespace-pre-line">
-                    <MentionText
-                      text={task.latestNote}
-                      mentionables={mentionables}
-                      currentUserName={currentUser.name}
-                    />
-                  </p>
+                  <RichNoteText
+                    note={task.latestNote}
+                    mentionables={mentionables}
+                    currentUserName={currentUser.name}
+                    className="rounded-md bg-muted px-3 py-2 text-sm"
+                  />
                 </section>
               )}
 
@@ -392,13 +392,17 @@ export default function KanbanTaskDetailsPanel({
                               {label.toLowerCase()} · {auditLogEntry.summary}
                             </span>
                           </p>
-                          <p className="text-sm whitespace-pre-line">
-                            <MentionText
-                              text={auditLogEntry.note}
-                              mentionables={mentionables}
-                              currentUserName={currentUser.name}
-                            />
-                          </p>
+                          <RichNoteText
+                            note={auditLogEntry.note}
+                            mentionables={mentionables}
+                            currentUserName={currentUser.name}
+                            className="text-sm"
+                          />
+                          <KanbanActivityFiles
+                            attachments={task.attachments.filter(
+                              (attachment) => attachment.activityId === auditLogEntry.id,
+                            )}
+                          />
                           <time
                             dateTime={auditLogEntry.occurredAt}
                             className="text-xs text-muted-foreground tabular-nums"
