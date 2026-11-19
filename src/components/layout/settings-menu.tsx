@@ -56,7 +56,7 @@ const SETTINGS_MENU_PLACEHOLDERS: SettingsMenuPlaceholder[] = [
   {
     label: "Switch business",
     Icon: Building2,
-    plannedFeature: "Switch between NWT, Verilot and RWT (E4-2)",
+    plannedFeature: "Switch between NWT, Verilot IM and RWT (E4-2)",
   },
   {
     label: "Boards & stages",

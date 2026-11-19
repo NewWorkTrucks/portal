@@ -147,7 +147,7 @@ export const MOCK_KANBAN_TASKS: KanbanTask[] = [
   {
     id: "task-verilot-1",
     businessId: "business-verilot",
-    title: "Verilot vendor compliance audit",
+    title: "Verilot IM vendor compliance audit",
     description: "Check vendor certificates against the Q4 compliance list.",
     status: "working-on-it",
     ownerName: "Rowan",
@@ -161,8 +161,8 @@ export const MOCK_KANBAN_TASKS: KanbanTask[] = [
   {
     id: "task-verilot-2",
     businessId: "business-verilot",
-    title: "Set up Verilot reporting dashboard",
-    description: "Weekly KPIs for the Verilot operations team.",
+    title: "Set up Verilot IM reporting dashboard",
+    description: "Weekly KPIs for the Verilot IM operations team.",
     status: "not-started",
     ownerName: "Riley",
     priority: "medium",

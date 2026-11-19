@@ -18,7 +18,7 @@ export const ONBOARDING_TOUR_STEPS: OnboardingTourStep[] = [
     target: "business",
     title: "Your business",
     description:
-      "Cards, people and the audit log are kept separate for each business: NWT, Verilot and RWT.",
+      "Cards, people and the audit log are kept separate for each business: NWT, Verilot IM and RWT.",
     side: "bottom",
   },
   {
