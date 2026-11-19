@@ -2,16 +2,20 @@
 
 import { LayoutDashboard } from "lucide-react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
+import { signInWithPassword } from "@/api/auth";
 import { useDataMode } from "@/components/data-mode-provider";
 import EmailSignInForm from "@/components/forms/email-sign-in-form";
+import PasswordSignInForm from "@/components/forms/password-sign-in-form";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 
-// Google is hidden until its provider is set up in Supabase (nwt-server: docs/google-sign-in-setup.md).
-// Set to true to show "Continue with Google" again.
+// Email and password is the only sign-in for now. Set these to true to offer the others again.
+// Google needs its provider set up in Supabase (nwt-server: docs/google-sign-in-setup.md).
 const IS_GOOGLE_SIGN_IN_ENABLED = false;
+// Email links need custom SMTP in Supabase: the built-in sender allows only a few emails an hour.
+const IS_EMAIL_LINK_SIGN_IN_ENABLED = false;
 
 const SIGN_IN_ERROR_MESSAGES: Record<string, string> = {
   "sign-in-failed": "That sign-in link didn't work or has expired. Try again.",
@@ -21,9 +25,13 @@ function getAuthCallbackUrl(): string {
   return `${window.location.origin}/auth/callback?next=/kanban`;
 }
 
-/** Google first (while enabled), email link as the fallback (E4-3). Mock mode needs no sign-in. */
+/**
+ * Email and password sign-in, with Google and email links available behind flags (E4-3).
+ * Mock mode needs no sign-in.
+ */
 export default function SignInPanel() {
   const { dataMode } = useDataMode();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = getSupabaseBrowserClient();
 
@@ -46,7 +54,22 @@ export default function SignInPanel() {
     }
   }
 
-  async function handleSubmitEmailSignIn(email: string): Promise<string | null> {
+  async function handleSubmitPasswordSignIn(
+    email: string,
+    password: string,
+  ): Promise<string | null> {
+    const errorMessage = await signInWithPassword(email, password);
+    if (!errorMessage) {
+      router.replace("/kanban");
+      // Re-render server components with the new session cookie.
+      router.refresh();
+    }
+    return errorMessage;
+  }
+
+  async function handleSubmitEmailSignIn(
+    email: string,
+  ): Promise<string | null> {
     if (!supabase) {
       return "Sign-in isn't set up.";
     }
@@ -70,16 +93,20 @@ export default function SignInPanel() {
       {dataMode === "mock" ? (
         <div className="flex flex-col gap-3 text-sm">
           <p className="text-muted-foreground">
-            The portal is in mock mode, which uses sample data and needs no sign-in.
+            The portal is in mock mode, which uses sample data and needs no
+            sign-in.
           </p>
-          <Link href="/kanban" className={buttonVariants({ className: "w-fit" })}>
+          <Link
+            href="/kanban"
+            className={buttonVariants({ className: "w-fit" })}
+          >
             Go to the board
           </Link>
         </div>
       ) : !supabase ? (
         <p className="text-sm text-muted-foreground">
-          Live mode isn&rsquo;t set up: add the Supabase settings to <code>.env</code> (see{" "}
-          <code>.env.example</code>).
+          Live mode isn&rsquo;t set up: add the Supabase settings to{" "}
+          <code>.env</code> (see <code>.env.example</code>).
         </p>
       ) : (
         <>
@@ -88,10 +115,17 @@ export default function SignInPanel() {
               {callbackError}
             </p>
           )}
+          <PasswordSignInForm onSubmit={handleSubmitPasswordSignIn} />
+          {(IS_GOOGLE_SIGN_IN_ENABLED || IS_EMAIL_LINK_SIGN_IN_ENABLED) && (
+            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+              <span className="h-px flex-1 bg-border" />
+              or
+              <span className="h-px flex-1 bg-border" />
+            </div>
+          )}
           {IS_GOOGLE_SIGN_IN_ENABLED && (
-            <>
             <div className="flex flex-col gap-1.5">
-              <Button onClick={handleClickGoogleSignIn}>
+              <Button variant="outline" onClick={handleClickGoogleSignIn}>
                 <svg aria-hidden viewBox="0 0 24 24" className="size-4">
                   <path
                     fill="currentColor"
@@ -106,14 +140,10 @@ export default function SignInPanel() {
                 </p>
               )}
             </div>
-            <div className="flex items-center gap-3 text-xs text-muted-foreground">
-              <span className="h-px flex-1 bg-border" />
-              or
-              <span className="h-px flex-1 bg-border" />
-            </div>
-            </>
           )}
-          <EmailSignInForm onSubmit={handleSubmitEmailSignIn} />
+          {IS_EMAIL_LINK_SIGN_IN_ENABLED && (
+            <EmailSignInForm onSubmit={handleSubmitEmailSignIn} />
+          )}
         </>
       )}
     </div>
