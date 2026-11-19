@@ -2,7 +2,7 @@ export type MentionableKind = "member" | "group";
 
 /** Someone (or a group of people) that can be @-mentioned in a note. */
 export type Mentionable = {
-  /** What follows the @ in a note, e.g. "Miggy" or "Leadership". */
+  /** What follows the @ in a note, e.g. "Morgan" or "Leadership". */
   handle: string;
   label: string;
   description: string;

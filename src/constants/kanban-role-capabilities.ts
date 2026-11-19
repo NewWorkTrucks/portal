@@ -1,6 +1,6 @@
 import type { KanbanRoleDefinition, PortalRole } from "@/types/roles";
 
-// Proposed defaults. TODO: Confirm with Miggy before launch; the user stories leave open
+// Proposed defaults. TODO: Confirm with the operations manager before launch; the user stories leave open
 // "who can move cards: owner only, or reviewers too?" and who may reassign work.
 // TODO: Mirror these rules in Supabase RLS on every table (E4-1). The UI checks are not security.
 export const KANBAN_ROLE_DEFINITIONS: Record<PortalRole, KanbanRoleDefinition> = {

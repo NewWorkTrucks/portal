@@ -9,7 +9,7 @@ import EmailSignInForm from "@/components/forms/email-sign-in-form";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 
-// Google is hidden until its provider is set up in Supabase (docs/google-sign-in-setup.md).
+// Google is hidden until its provider is set up in Supabase (nwt-server: docs/google-sign-in-setup.md).
 // Set to true to show "Continue with Google" again.
 const IS_GOOGLE_SIGN_IN_ENABLED = false;
 

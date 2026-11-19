@@ -97,7 +97,7 @@ export default function KanbanStuckForm({ mentionables, onSubmit, onCancel }: Ka
 
       <p className="flex items-start gap-2 rounded-md bg-destructive/10 px-3 py-2 text-xs text-destructive">
         <TriangleAlert aria-hidden className="mt-0.5 size-3.5 shrink-0" />
-        Marking this card Stuck notifies @Leadership (Miggy, Erik, Kc and Chris).
+        Marking this card Stuck notifies @Leadership.
       </p>
 
       <div className="flex justify-end gap-2">

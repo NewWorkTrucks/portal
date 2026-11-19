@@ -58,7 +58,7 @@ function getOperationDialogCopy(operation: KanbanNoteOnlyOperation): OperationDi
           </>
         ),
         noteLabel: "Update",
-        notePlaceholder: "e.g. Supplier confirmed by phone; written quote expected Friday. @Miggy FYI",
+        notePlaceholder: "e.g. Supplier confirmed by phone; written quote expected Friday. @Morgan FYI",
         submitLabel: "Post update",
         SubmitIcon: MessageSquarePlus,
         submitVariant: "default",
@@ -73,7 +73,7 @@ function getOperationDialogCopy(operation: KanbanNoteOnlyOperation): OperationDi
           </>
         ),
         noteLabel: "Why is it being reassigned?",
-        notePlaceholder: "e.g. Edward is out this week; Miggy is taking over.",
+        notePlaceholder: "e.g. Sam is out this week; Morgan is taking over.",
         submitLabel: "Reassign",
         SubmitIcon: UserRoundPen,
         submitVariant: "default",

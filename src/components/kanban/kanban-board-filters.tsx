@@ -38,7 +38,7 @@ type FilterDropdownProps = {
   children: ReactNode;
 };
 
-/** A filter button that shows what is selected, e.g. "Owner: Edward, Casey". */
+/** A filter button that shows what is selected, e.g. "Owner: Sam, Quinn". */
 function FilterDropdown({ label, Icon, selectedSummary, children }: FilterDropdownProps) {
   return (
     <DropdownMenu>

@@ -24,6 +24,8 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: { default: "FFL Admin", template: "%s | FFL Admin" },
   description: "NWTOS company-wide admin portal",
+  // Internal tool: keep it out of search results.
+  robots: { index: false, follow: false },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
