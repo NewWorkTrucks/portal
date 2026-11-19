@@ -9,6 +9,10 @@ import EmailSignInForm from "@/components/forms/email-sign-in-form";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 
+// Google is hidden until its provider is set up in Supabase (docs/google-sign-in-setup.md).
+// Set to true to show "Continue with Google" again.
+const IS_GOOGLE_SIGN_IN_ENABLED = false;
+
 const SIGN_IN_ERROR_MESSAGES: Record<string, string> = {
   "sign-in-failed": "That sign-in link didn't work or has expired. Try again.",
 };
@@ -17,7 +21,7 @@ function getAuthCallbackUrl(): string {
   return `${window.location.origin}/auth/callback?next=/kanban`;
 }
 
-/** Google first, email link as the fallback (E4-3). Mock mode needs no sign-in. */
+/** Google first (while enabled), email link as the fallback (E4-3). Mock mode needs no sign-in. */
 export default function SignInPanel() {
   const { dataMode } = useDataMode();
   const searchParams = useSearchParams();
@@ -84,27 +88,31 @@ export default function SignInPanel() {
               {callbackError}
             </p>
           )}
-          <div className="flex flex-col gap-1.5">
-            <Button onClick={handleClickGoogleSignIn}>
-              <svg aria-hidden viewBox="0 0 24 24" className="size-4">
-                <path
-                  fill="currentColor"
-                  d="M21.35 11.1H12v2.98h5.38c-.24 1.36-1.62 3.98-5.38 3.98-3.24 0-5.88-2.68-5.88-5.98S8.76 6.1 12 6.1c1.84 0 3.08.78 3.78 1.46l2.58-2.48C16.7 3.54 14.56 2.6 12 2.6 6.8 2.6 2.6 6.8 2.6 12s4.2 9.4 9.4 9.4c5.42 0 9.02-3.8 9.02-9.16 0-.62-.06-1.08-.15-1.54z"
-                />
-              </svg>
-              Continue with Google
-            </Button>
-            {googleError && (
-              <p role="alert" className="text-xs text-destructive">
-                {googleError}
-              </p>
-            )}
-          </div>
-          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-            <span className="h-px flex-1 bg-border" />
-            or
-            <span className="h-px flex-1 bg-border" />
-          </div>
+          {IS_GOOGLE_SIGN_IN_ENABLED && (
+            <>
+            <div className="flex flex-col gap-1.5">
+              <Button onClick={handleClickGoogleSignIn}>
+                <svg aria-hidden viewBox="0 0 24 24" className="size-4">
+                  <path
+                    fill="currentColor"
+                    d="M21.35 11.1H12v2.98h5.38c-.24 1.36-1.62 3.98-5.38 3.98-3.24 0-5.88-2.68-5.88-5.98S8.76 6.1 12 6.1c1.84 0 3.08.78 3.78 1.46l2.58-2.48C16.7 3.54 14.56 2.6 12 2.6 6.8 2.6 2.6 6.8 2.6 12s4.2 9.4 9.4 9.4c5.42 0 9.02-3.8 9.02-9.16 0-.62-.06-1.08-.15-1.54z"
+                  />
+                </svg>
+                Continue with Google
+              </Button>
+              {googleError && (
+                <p role="alert" className="text-xs text-destructive">
+                  {googleError}
+                </p>
+              )}
+            </div>
+            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+              <span className="h-px flex-1 bg-border" />
+              or
+              <span className="h-px flex-1 bg-border" />
+            </div>
+            </>
+          )}
           <EmailSignInForm onSubmit={handleSubmitEmailSignIn} />
         </>
       )}
