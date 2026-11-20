@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  Bell,
   BookOpen,
   Building2,
   Route,
@@ -48,11 +47,6 @@ type SettingsMenuPlaceholder = {
 
 // TODO: Replace each placeholder with its real page or dialog as the feature is built.
 const SETTINGS_MENU_PLACEHOLDERS: SettingsMenuPlaceholder[] = [
-  {
-    label: "Notification preferences",
-    Icon: Bell,
-    plannedFeature: "In-app and email notification settings (E3-3)",
-  },
   {
     label: "Switch business",
     Icon: Building2,

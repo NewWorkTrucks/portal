@@ -104,3 +104,9 @@ export type KanbanNotificationRow = {
   } | null;
   task: { title: string } | null;
 };
+
+export type NotificationPreferencesRow = {
+  notify_on_mention: boolean;
+  notify_on_review_request: boolean;
+  notify_on_leadership_alert: boolean;
+};

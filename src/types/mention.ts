@@ -32,3 +32,17 @@ export type ActiveMentionQuery = {
   /** Index of the "@" in the text. */
   startIndex: number;
 };
+
+/** A mention group as admins edit it in Settings (E3-1). */
+export type EditableMentionGroup = {
+  id: string;
+  handle: string;
+  label: string;
+  memberIds: string[];
+};
+
+export type MentionGroupFormValues = {
+  label: string;
+  /** What follows the @. Fixed once the group exists, because earlier notes mention it. */
+  handle: string;
+};
