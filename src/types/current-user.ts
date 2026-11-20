@@ -1,4 +1,5 @@
 import type { Business } from "@/types/business";
+import type { ProfileFormValues } from "@/types/profile";
 import type { TeamMember } from "@/types/team";
 
 export type CurrentUserContextValue = {
@@ -16,4 +17,6 @@ export type CurrentUserContextValue = {
   currentBusiness: Business;
   /** Switch which business we are viewing: development-only in mock mode, real in live mode. */
   selectBusiness: (businessId: string) => void;
+  /** Saves the signed-in person's name and job title; resolves to an error message, or null when saved. */
+  updateSignedInUserProfile: (profileFormValues: ProfileFormValues) => Promise<string | null>;
 };

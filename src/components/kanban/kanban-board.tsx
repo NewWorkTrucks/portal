@@ -17,6 +17,7 @@ import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { History, Lock, Plus } from "lucide-react";
 import Link from "next/link";
 import { Suspense, useId, useMemo, useState } from "react";
+import { useDevicePreferences } from "@/components/device-preferences-provider";
 import { useKanbanBoard } from "@/components/kanban/kanban-board-provider";
 import { KanbanCardContent } from "@/components/kanban/kanban-card";
 import KanbanBoardFilters from "@/components/kanban/kanban-board-filters";
@@ -90,6 +91,7 @@ export default function KanbanBoard() {
     getTaskPermissions,
     getMoveDeniedReason,
   } = useKanbanBoard();
+  const { isDoneColumnHidden } = useDevicePreferences();
   const dndContextId = useId();
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: POINTER_ACTIVATION_DISTANCE_PX } }),
@@ -129,8 +131,9 @@ export default function KanbanBoard() {
     () =>
       taskFilters.statuses.length > 0
         ? KANBAN_COLUMNS.filter((column) => taskFilters.statuses.includes(column.status))
-        : KANBAN_COLUMNS,
-    [taskFilters.statuses],
+        : // Settings can hide Done; filtering by Done still shows it.
+          KANBAN_COLUMNS.filter((column) => !(isDoneColumnHidden && column.status === "done")),
+    [taskFilters.statuses, isDoneColumnHidden],
   );
   const totalTaskCount = useMemo(
     () => Object.values(tasksByStatus).reduce((taskCount, tasks) => taskCount + tasks.length, 0),

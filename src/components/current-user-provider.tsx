@@ -1,9 +1,11 @@
 "use client";
 
 import { createContext, type ReactNode, useContext, useState } from "react";
+import { useDevicePreferences } from "@/components/device-preferences-provider";
 import { IS_USER_SIMULATION_ENABLED } from "@/constants/feature-flags";
 import type { Business } from "@/types/business";
 import type { CurrentUserContextValue } from "@/types/current-user";
+import type { ProfileFormValues } from "@/types/profile";
 import type { TeamMember } from "@/types/team";
 
 /** Filled by the mock provider below or by LiveCurrentUserProvider, depending on data mode. */
@@ -24,11 +26,14 @@ type CurrentUserProviderProps = {
  */
 /** Mock mode: the sample team, with development-only "view as" and business switching. */
 export function CurrentUserProvider({
-  teamMembers,
+  teamMembers: initialTeamMembers,
   businesses,
   signedInUserId,
   children,
 }: CurrentUserProviderProps) {
+  const { defaultBusinessId } = useDevicePreferences();
+
+  const [teamMembers, setTeamMembers] = useState(initialTeamMembers);
   const [simulatedUserId, setSimulatedUserId] = useState<string | null>(null);
   const [selectedBusinessId, setSelectedBusinessId] = useState<string | null>(null);
 
@@ -45,6 +50,7 @@ export function CurrentUserProvider({
   // TODO: Production picks the business from the signed-in session; switching is development-only for now.
   const currentBusiness =
     availableBusinesses.find((business) => business.id === selectedBusinessId) ??
+    availableBusinesses.find((business) => business.id === defaultBusinessId) ??
     availableBusinesses[0] ??
     businesses[0];
 
@@ -54,6 +60,18 @@ export function CurrentUserProvider({
     }
 
     setSimulatedUserId(teamMemberId === signedInUser.id ? null : teamMemberId);
+  }
+
+  async function updateSignedInUserProfile(profileFormValues: ProfileFormValues) {
+    // Mock mode: kept in this browser tab only.
+    setTeamMembers((previousTeamMembers) =>
+      previousTeamMembers.map((teamMember) =>
+        teamMember.id === signedInUser.id
+          ? { ...teamMember, name: profileFormValues.fullName, jobTitle: profileFormValues.jobTitle }
+          : teamMember,
+      ),
+    );
+    return null;
   }
 
   function selectBusiness(businessId: string) {
@@ -73,6 +91,7 @@ export function CurrentUserProvider({
         availableBusinesses,
         currentBusiness,
         selectBusiness,
+        updateSignedInUserProfile,
       }}
     >
       {children}

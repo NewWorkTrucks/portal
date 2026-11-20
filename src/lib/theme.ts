@@ -6,6 +6,7 @@ import {
   THEME_MODE_OPTIONS,
   THEME_MODE_STORAGE_KEY,
 } from "@/constants/theme";
+import { readStoredValue } from "@/lib/browser-storage";
 import type { AccentColor, ThemeMode } from "@/types/theme";
 
 const DARK_COLOR_SCHEME_QUERY = "(prefers-color-scheme: dark)";
@@ -16,23 +17,6 @@ export function isThemeMode(value: unknown): value is ThemeMode {
 
 export function isAccentColor(value: unknown): value is AccentColor {
   return ACCENT_COLOR_OPTIONS.some((option) => option.value === value);
-}
-
-function readStoredValue(storageKey: string): string | null {
-  try {
-    return window.localStorage.getItem(storageKey);
-  } catch {
-    // Storage can be blocked (private mode, disabled site data); fall back to defaults.
-    return null;
-  }
-}
-
-export function writeStoredValue(storageKey: string, value: string): void {
-  try {
-    window.localStorage.setItem(storageKey, value);
-  } catch {
-    // Not saved, but the choice still applies for this visit.
-  }
 }
 
 export function readStoredThemeMode(): ThemeMode {

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
 import { DataModeProvider } from "@/components/data-mode-provider";
+import { DevicePreferencesProvider } from "@/components/device-preferences-provider";
 import { OnboardingTourProvider } from "@/components/onboarding-tour-provider";
 import { ThemeProvider } from "@/components/theme-provider";
 import { buildThemeInitScript } from "@/lib/theme";
@@ -47,9 +48,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       </head>
       <body className="flex h-dvh flex-col">
         <ThemeProvider>
-          <DataModeProvider>
-            <OnboardingTourProvider>{children}</OnboardingTourProvider>
-          </DataModeProvider>
+          <DevicePreferencesProvider>
+            <DataModeProvider>
+              <OnboardingTourProvider>{children}</OnboardingTourProvider>
+            </DataModeProvider>
+          </DevicePreferencesProvider>
         </ThemeProvider>
       </body>
     </html>

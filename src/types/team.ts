@@ -4,6 +4,8 @@ export type TeamMember = {
   id: string;
   name: string;
   jobTitle: string;
+  /** Sign-in email (live mode); read-only in the portal. */
+  email?: string;
   role: PortalRole;
   /** What @mentions use; defaults to the name without spaces. */
   mentionHandle?: string;

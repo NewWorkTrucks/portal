@@ -11,8 +11,9 @@ import {
   type LucideIcon,
   Palette,
   Settings,
-  UserRound,
+  SlidersHorizontal,
 } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 import { signOut } from "@/api/auth";
 import ChangePasswordDialog from "@/components/auth/change-password-dialog";
@@ -47,7 +48,6 @@ type SettingsMenuPlaceholder = {
 
 // TODO: Replace each placeholder with its real page or dialog as the feature is built.
 const SETTINGS_MENU_PLACEHOLDERS: SettingsMenuPlaceholder[] = [
-  { label: "My profile", Icon: UserRound, plannedFeature: "Profile page" },
   {
     label: "Notification preferences",
     Icon: Bell,
@@ -63,7 +63,6 @@ const SETTINGS_MENU_PLACEHOLDERS: SettingsMenuPlaceholder[] = [
     Icon: Columns3,
     plannedFeature: "Admin board and stage configuration (E1-1)",
   },
-  { label: "Account settings", Icon: Settings, plannedFeature: "Account settings page" },
   {
     label: "One-page guide",
     Icon: BookOpen,
@@ -97,6 +96,10 @@ export default function SettingsMenu() {
         <DropdownMenuContent align="end" className="w-56">
           <DropdownMenuGroup>
             <DropdownMenuLabel>Settings</DropdownMenuLabel>
+            <DropdownMenuItem render={<Link href="/settings" />}>
+              <SlidersHorizontal aria-hidden />
+              All settings
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={requestTour}>
               <Route aria-hidden />
               Take the tour

@@ -3,11 +3,15 @@
 import { LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { type ReactNode, useEffect, useMemo, useState } from "react";
+import { updateMyProfile } from "@/api/profile";
 import { CurrentUserContext } from "@/components/current-user-provider";
+import { useDevicePreferences } from "@/components/device-preferences-provider";
 import { Button } from "@/components/ui/button";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 import type { Business } from "@/types/business";
+import type { CurrentUserContextValue } from "@/types/current-user";
 import type { BusinessMembershipRow, BusinessRow, ProfileRow } from "@/types/live/rows";
+import type { ProfileFormValues } from "@/types/profile";
 import type { TeamMember } from "@/types/team";
 
 type LiveCurrentUserProviderProps = {
@@ -45,11 +49,12 @@ function LiveStatusMessage({ title, children }: { title: string; children: React
  */
 export default function LiveCurrentUserProvider({ children }: LiveCurrentUserProviderProps) {
   const router = useRouter();
+  const { defaultBusinessId } = useDevicePreferences();
 
   const [loadState, setLoadState] = useState<LiveUserLoadState>({ status: "loading" });
   const [selectedBusinessId, setSelectedBusinessId] = useState<string | null>(null);
 
-  const contextValue = useMemo(() => {
+  const contextValue = useMemo((): CurrentUserContextValue | null => {
     if (loadState.status !== "ready") {
       return null;
     }
@@ -67,6 +72,7 @@ export default function LiveCurrentUserProvider({ children }: LiveCurrentUserPro
     );
     const currentBusiness =
       availableBusinesses.find((business) => business.id === selectedBusinessId) ??
+      availableBusinesses.find((business) => business.id === defaultBusinessId) ??
       availableBusinesses[0];
 
     if (!currentBusiness) {
@@ -86,6 +92,7 @@ export default function LiveCurrentUserProvider({ children }: LiveCurrentUserPro
           id: profile.id,
           name: profile.full_name,
           jobTitle: profile.job_title,
+          email: profile.email ?? undefined,
           mentionHandle: profile.mention_handle,
           role: currentMembership?.role ?? "member",
           businessIds: profileMemberships.map((membership) => membership.business_id),
@@ -109,8 +116,26 @@ export default function LiveCurrentUserProvider({ children }: LiveCurrentUserPro
       availableBusinesses,
       currentBusiness,
       selectBusiness: setSelectedBusinessId,
+      updateSignedInUserProfile: async (profileFormValues: ProfileFormValues) => {
+        const errorMessage = await updateMyProfile(signedInUser.id, profileFormValues);
+        if (!errorMessage) {
+          setLoadState((previousLoadState) =>
+            previousLoadState.status === "ready"
+              ? {
+                  ...previousLoadState,
+                  profiles: previousLoadState.profiles.map((profile) =>
+                    profile.id === signedInUser.id
+                      ? { ...profile, full_name: profileFormValues.fullName, job_title: profileFormValues.jobTitle }
+                      : profile,
+                  ),
+                }
+              : previousLoadState,
+          );
+        }
+        return errorMessage;
+      },
     };
-  }, [loadState, selectedBusinessId]);
+  }, [loadState, selectedBusinessId, defaultBusinessId]);
 
   async function handleClickSignOut() {
     await getSupabaseBrowserClient()?.auth.signOut();

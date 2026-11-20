@@ -12,8 +12,8 @@ import {
   readStoredAccentColor,
   readStoredThemeMode,
   subscribeToColorSchemeChanges,
-  writeStoredValue,
 } from "@/lib/theme";
+import { writeStoredValue } from "@/lib/browser-storage";
 import type { AccentColor, ThemeContextValue, ThemeMode } from "@/types/theme";
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);

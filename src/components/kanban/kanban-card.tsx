@@ -76,6 +76,8 @@ export function KanbanCardContent({ task, isOverlay = false }: KanbanCardContent
 
   return (
     <article
+      // The target cursor frames cards while hovered (Settings → Appearance).
+      data-cursor-target={isOverlay ? undefined : ""}
       className={cn(
         "relative flex flex-col gap-3 rounded-lg border bg-card p-3 text-card-foreground shadow-xs",
         // No rotate/scale here: transforms skew the overlay's measured rect and break keyboard moves.

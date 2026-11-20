@@ -299,3 +299,16 @@
 .ffl-tour-popover .driver-popover-arrow-side-bottom {
   border-color: transparent transparent var(--popover) transparent;
 }
+
+/* Low spec mode (Settings → Appearance): no animations, transitions or blur, for slower devices. */
+:root[data-low-spec] *,
+:root[data-low-spec] *::before,
+:root[data-low-spec] *::after {
+  animation-duration: 0s !important;
+  animation-delay: 0s !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0s !important;
+  transition-delay: 0s !important;
+  scroll-behavior: auto !important;
+  backdrop-filter: none !important;
+}
