@@ -3,10 +3,11 @@
 import { LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { type ReactNode, useEffect, useMemo, useState } from "react";
-import { updateMyProfile } from "@/api/profile";
+import { getProfilePhotoUrls, replaceMyProfilePhoto, updateMyProfile } from "@/api/profile";
 import { CurrentUserContext } from "@/components/current-user-provider";
 import { useDevicePreferences } from "@/components/device-preferences-provider";
 import { Button } from "@/components/ui/button";
+import { shrinkProfilePhoto } from "@/lib/profile-photo";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 import type { Business } from "@/types/business";
 import type { CurrentUserContextValue } from "@/types/current-user";
@@ -29,6 +30,8 @@ type LiveUserLoadState =
       profiles: ProfileRow[];
       memberships: BusinessMembershipRow[];
       businesses: BusinessRow[];
+      /** Signed profile photo links by storage path. */
+      photoUrlByPath: Map<string, string>;
     };
 
 function LiveStatusMessage({ title, children }: { title: string; children: ReactNode }) {
@@ -93,6 +96,7 @@ export default function LiveCurrentUserProvider({ children }: LiveCurrentUserPro
           name: profile.full_name,
           jobTitle: profile.job_title,
           email: profile.email ?? undefined,
+          photoUrl: profile.avatar_path ? loadState.photoUrlByPath.get(profile.avatar_path) : undefined,
           mentionHandle: profile.mention_handle,
           role: currentMembership?.role ?? "member",
           businessIds: profileMemberships.map((membership) => membership.business_id),
@@ -134,6 +138,29 @@ export default function LiveCurrentUserProvider({ children }: LiveCurrentUserPro
         }
         return errorMessage;
       },
+      updateSignedInUserPhoto: async (photoFile: File | null) => {
+        const previousPhotoPath =
+          loadState.profiles.find((profile) => profile.id === signedInUser.id)?.avatar_path ?? null;
+        try {
+          const photoBlob = photoFile ? await shrinkProfilePhoto(photoFile) : null;
+          const newPhotoPath = await replaceMyProfilePhoto(signedInUser.id, previousPhotoPath, photoBlob);
+          const newPhotoUrlByPath = newPhotoPath ? await getProfilePhotoUrls([newPhotoPath]) : new Map<string, string>();
+          setLoadState((previousLoadState) =>
+            previousLoadState.status === "ready"
+              ? {
+                  ...previousLoadState,
+                  profiles: previousLoadState.profiles.map((profile) =>
+                    profile.id === signedInUser.id ? { ...profile, avatar_path: newPhotoPath } : profile,
+                  ),
+                  photoUrlByPath: new Map([...previousLoadState.photoUrlByPath, ...newPhotoUrlByPath]),
+                }
+              : previousLoadState,
+          );
+          return null;
+        } catch (photoError) {
+          return photoError instanceof Error ? photoError.message : "Couldn't save your photo.";
+        }
+      },
     };
   }, [loadState, selectedBusinessId, defaultBusinessId]);
 
@@ -160,7 +187,7 @@ export default function LiveCurrentUserProvider({ children }: LiveCurrentUserPro
       }
 
       const [profilesResult, membershipsResult, businessesResult] = await Promise.all([
-        supabase.from("profiles").select("id, full_name, mention_handle, job_title, email"),
+        supabase.from("profiles").select("id, full_name, mention_handle, job_title, email, avatar_path"),
         supabase.from("business_memberships").select("business_id, user_id, role"),
         supabase.from("businesses").select("id, slug, name, short_name").order("name"),
       ]);
@@ -174,10 +201,19 @@ export default function LiveCurrentUserProvider({ children }: LiveCurrentUserPro
         return;
       }
 
+      const profileRows = profilesResult.data as ProfileRow[];
+      const photoUrlByPath = await getProfilePhotoUrls(
+        profileRows.flatMap((profileRow) => (profileRow.avatar_path ? [profileRow.avatar_path] : [])),
+      );
+      if (isCancelled) {
+        return;
+      }
+
       setLoadState({
         status: "ready",
         signedInUserId: userData.user.id,
-        profiles: profilesResult.data as ProfileRow[],
+        profiles: profileRows,
+        photoUrlByPath,
         memberships: membershipsResult.data as BusinessMembershipRow[],
         businesses: businessesResult.data as BusinessRow[],
       });

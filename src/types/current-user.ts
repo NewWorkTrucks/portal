@@ -19,4 +19,6 @@ export type CurrentUserContextValue = {
   selectBusiness: (businessId: string) => void;
   /** Saves the signed-in person's name and job title; resolves to an error message, or null when saved. */
   updateSignedInUserProfile: (profileFormValues: ProfileFormValues) => Promise<string | null>;
+  /** Uploads a new profile photo, or removes it when null; resolves to an error message, or null when saved. */
+  updateSignedInUserPhoto: (photoFile: File | null) => Promise<string | null>;
 };

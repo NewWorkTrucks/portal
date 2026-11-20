@@ -74,6 +74,17 @@ export function CurrentUserProvider({
     return null;
   }
 
+  async function updateSignedInUserPhoto(photoFile: File | null) {
+    // Mock mode: a link to the file in this browser tab only.
+    const photoUrl = photoFile ? URL.createObjectURL(photoFile) : undefined;
+    setTeamMembers((previousTeamMembers) =>
+      previousTeamMembers.map((teamMember) =>
+        teamMember.id === signedInUser.id ? { ...teamMember, photoUrl } : teamMember,
+      ),
+    );
+    return null;
+  }
+
   function selectBusiness(businessId: string) {
     if (IS_USER_SIMULATION_ENABLED) {
       setSelectedBusinessId(businessId);
@@ -92,6 +103,7 @@ export function CurrentUserProvider({
         currentBusiness,
         selectBusiness,
         updateSignedInUserProfile,
+        updateSignedInUserPhoto,
       }}
     >
       {children}

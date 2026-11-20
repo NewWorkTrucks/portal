@@ -6,6 +6,7 @@ import ChangePasswordDialog from "@/components/auth/change-password-dialog";
 import { useCurrentUser } from "@/components/current-user-provider";
 import { useDataMode } from "@/components/data-mode-provider";
 import ProfileForm from "@/components/forms/profile-form";
+import ProfilePhotoField from "@/components/settings/profile-photo-field";
 import SettingsSection from "@/components/settings/settings-section";
 import { Button } from "@/components/ui/button";
 
@@ -17,6 +18,7 @@ export default function ProfileSettingsSection() {
 
   return (
     <SettingsSection title="Profile" description="How teammates see you on cards, mentions and the audit log.">
+      <ProfilePhotoField />
       <ProfileForm
         // Remount when the person changes (mock "view as" or a new sign-in) so the fields reset.
         key={signedInUser.id}
