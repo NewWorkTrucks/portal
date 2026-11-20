@@ -4,6 +4,7 @@ import {
   Archive,
   CalendarClock,
   CalendarDays,
+  ChevronDown,
   CircleCheck,
   ClipboardCheck,
   CornerUpLeft,
@@ -18,7 +19,7 @@ import {
   Timer,
   UserRoundPen,
 } from "lucide-react";
-import { type ReactNode, useMemo } from "react";
+import { type ReactNode, useMemo, useState } from "react";
 import AttachmentPicker from "@/components/attachment-picker";
 import { useCurrentUser } from "@/components/current-user-provider";
 import { useKanbanBoard } from "@/components/kanban/kanban-board-provider";
@@ -62,6 +63,9 @@ type KanbanTaskDetailsPanelProps = {
   onOpenChange: (isOpen: boolean) => void;
 };
 
+/** How many activity entries show at first, and how many more each "Show more" adds. */
+const ACTIVITY_PAGE_SIZE = 10;
+
 type DetailRowProps = {
   label: string;
   children: ReactNode;
@@ -87,11 +91,30 @@ export default function KanbanTaskDetailsPanel({
   const { auditLogEntries, mentionables, getTaskPermissions } = useKanbanBoard();
   const { currentUser } = useCurrentUser();
 
+  // Remembered per card, so opening another card starts again with the newest entries.
+  const [activityLimit, setActivityLimit] = useState<{ taskId: string | null; count: number }>({
+    taskId: null,
+    count: ACTIVITY_PAGE_SIZE,
+  });
+
   // TODO: Load the card's activity from the backend activity-log endpoint (per-card view, E1-5).
   const taskAuditLogEntries = useMemo(
     () => (task ? auditLogEntries.filter((auditLogEntry) => auditLogEntry.taskId === task.id) : []),
     [auditLogEntries, task],
   );
+  const visibleActivityCount = activityLimit.taskId === task?.id ? activityLimit.count : ACTIVITY_PAGE_SIZE;
+  // Newest first, so the latest activity is always shown.
+  const visibleTaskAuditLogEntries = useMemo(
+    () => taskAuditLogEntries.slice(0, visibleActivityCount),
+    [taskAuditLogEntries, visibleActivityCount],
+  );
+  const hiddenActivityCount = taskAuditLogEntries.length - visibleTaskAuditLogEntries.length;
+
+  function handleClickShowMoreActivity() {
+    if (task) {
+      setActivityLimit({ taskId: task.id, count: visibleActivityCount + ACTIVITY_PAGE_SIZE });
+    }
+  }
 
   const column = task ? KANBAN_COLUMNS.find((kanbanColumn) => kanbanColumn.status === task.status) : undefined;
   const priorityLabel = task
@@ -374,47 +397,56 @@ export default function KanbanTaskDetailsPanel({
                     No activity recorded for this card yet.
                   </p>
                 ) : (
-                  <ol className="flex flex-col gap-3 border-l pl-4">
-                    {taskAuditLogEntries.map((auditLogEntry) => {
-                      const { label, Icon } = AUDIT_LOG_ACTION_DISPLAY[auditLogEntry.action];
+                  <>
+                    <ol className="flex flex-col gap-3 border-l pl-4">
+                      {visibleTaskAuditLogEntries.map((auditLogEntry) => {
+                        const { label, Icon } = AUDIT_LOG_ACTION_DISPLAY[auditLogEntry.action];
 
-                      return (
-                        <li key={auditLogEntry.id} className="relative flex flex-col gap-1">
-                          <span
-                            aria-hidden
-                            className="absolute top-0.5 -left-[1.4rem] flex size-4 items-center justify-center rounded-full border bg-background"
-                          >
-                            <Icon className="size-2.5 text-muted-foreground" />
-                          </span>
-                          <p className="text-xs">
-                            <span className="font-medium">{auditLogEntry.actorName}</span>{" "}
-                            <span className="text-muted-foreground">
-                              {label.toLowerCase()} · {auditLogEntry.summary}
+                        return (
+                          <li key={auditLogEntry.id} className="relative flex flex-col gap-1">
+                            <span
+                              aria-hidden
+                              className="absolute top-0.5 -left-[1.4rem] flex size-4 items-center justify-center rounded-full border bg-background"
+                            >
+                              <Icon className="size-2.5 text-muted-foreground" />
                             </span>
-                          </p>
-                          <RichNoteText
-                            note={auditLogEntry.note}
-                            mentionables={mentionables}
-                            currentUserName={currentUser.name}
-                            className="text-sm"
-                          />
-                          <KanbanActivityFiles
-                            attachments={task.attachments.filter(
-                              (attachment) => attachment.activityId === auditLogEntry.id,
-                            )}
-                          />
-                          <time
-                            dateTime={auditLogEntry.occurredAt}
-                            className="text-xs text-muted-foreground tabular-nums"
-                          >
-                            {formatAuditLogTimestamp(auditLogEntry.occurredAt)}
-                            {auditLogEntry.simulatedByName &&
-                              ` · via ${auditLogEntry.simulatedByName} (viewing as)`}
-                          </time>
-                        </li>
-                      );
-                    })}
-                  </ol>
+                            <p className="text-xs">
+                              <span className="font-medium">{auditLogEntry.actorName}</span>{" "}
+                              <span className="text-muted-foreground">
+                                {label.toLowerCase()} · {auditLogEntry.summary}
+                              </span>
+                            </p>
+                            <RichNoteText
+                              note={auditLogEntry.note}
+                              mentionables={mentionables}
+                              currentUserName={currentUser.name}
+                              className="text-sm"
+                            />
+                            <KanbanActivityFiles
+                              attachments={task.attachments.filter(
+                                (attachment) => attachment.activityId === auditLogEntry.id,
+                              )}
+                            />
+                            <time
+                              dateTime={auditLogEntry.occurredAt}
+                              className="text-xs text-muted-foreground tabular-nums"
+                            >
+                              {formatAuditLogTimestamp(auditLogEntry.occurredAt)}
+                              {auditLogEntry.simulatedByName &&
+                                ` · via ${auditLogEntry.simulatedByName} (viewing as)`}
+                            </time>
+                          </li>
+                        );
+                      })}
+                    </ol>
+                    {hiddenActivityCount > 0 && (
+                      <Button variant="outline" size="sm" className="self-start" onClick={handleClickShowMoreActivity}>
+                        <ChevronDown aria-hidden />
+                        Show {Math.min(hiddenActivityCount, ACTIVITY_PAGE_SIZE)} more
+                        <span className="text-muted-foreground">({hiddenActivityCount} older)</span>
+                      </Button>
+                    )}
+                  </>
                 )}
               </section>
             </div>

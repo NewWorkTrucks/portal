@@ -12,7 +12,7 @@ import type { AccentColor, ThemeMode } from "@/types/theme";
 
 export default function AppearanceSettingsSection() {
   const { themeMode, accentColor, setThemeMode, setAccentColor } = useTheme();
-  const { isLowSpecModeOn, isTargetCursorOn, setLowSpecMode, setTargetCursor } = useDevicePreferences();
+  const { isLowSpecModeOn, setLowSpecMode } = useDevicePreferences();
 
   return (
     <SettingsSection title="Appearance" description="Saved in this browser, so each device can be set up differently.">
@@ -62,7 +62,7 @@ export default function AppearanceSettingsSection() {
       <SettingsRow
         controlId="settings-low-spec-mode"
         label="Low spec mode"
-        description="Turns off animations, transitions, blur and the target cursor. Use it on slower computers. Starts on if your system asks for reduced motion."
+        description="Turns off animations, card hover effects, transitions and blur. Use it on slower computers. Starts on if your system asks for reduced motion."
       >
         <Switch
           id="settings-low-spec-mode"
@@ -70,25 +70,6 @@ export default function AppearanceSettingsSection() {
           aria-describedby="settings-low-spec-mode-description"
           checked={isLowSpecModeOn}
           onCheckedChange={setLowSpecMode}
-        />
-      </SettingsRow>
-
-      <SettingsRow
-        controlId="settings-target-cursor"
-        label="Target cursor"
-        description={
-          isLowSpecModeOn
-            ? "Turn off low spec mode to use this."
-            : "Frames a Kanban card with brackets while you point at it. Mouse and trackpad only."
-        }
-      >
-        <Switch
-          id="settings-target-cursor"
-          aria-labelledby="settings-target-cursor-label"
-          aria-describedby="settings-target-cursor-description"
-          checked={isTargetCursorOn && !isLowSpecModeOn}
-          disabled={isLowSpecModeOn}
-          onCheckedChange={setTargetCursor}
         />
       </SettingsRow>
     </SettingsSection>

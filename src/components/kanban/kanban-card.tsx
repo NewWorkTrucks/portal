@@ -3,6 +3,7 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { type KeyboardEvent, type MouseEvent, type PointerEvent, useRef } from "react";
 import { CSS } from "@dnd-kit/utilities";
+import { motion, type TargetAndTransition, type Transition } from "framer-motion";
 import {
   Archive,
   CalendarClock,
@@ -36,6 +37,7 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import { useCurrentUser } from "@/components/current-user-provider";
+import { useDevicePreferences } from "@/components/device-preferences-provider";
 import { useKanbanBoard } from "@/components/kanban/kanban-board-provider";
 import MentionText from "@/components/mention-text";
 import { toPlainNoteText } from "@/lib/rich-note";
@@ -61,6 +63,10 @@ type KanbanCardProps = {
   taskActions: KanbanTaskActions;
 };
 
+// Hover lift for cards in a column. Translate only: scale or rotate would skew dnd-kit's measurements.
+const CARD_HOVER_LIFT: TargetAndTransition = { y: -3 };
+const CARD_HOVER_TRANSITION: Transition = { type: "spring", stiffness: 500, damping: 30 };
+
 type KanbanCardContentProps = {
   task: KanbanTask;
   isOverlay?: boolean;
@@ -70,18 +76,22 @@ type KanbanCardContentProps = {
 export function KanbanCardContent({ task, isOverlay = false }: KanbanCardContentProps) {
   const { mentionables } = useKanbanBoard();
   const { currentUser } = useCurrentUser();
+  const { isLowSpecModeOn } = useDevicePreferences();
 
+  // The drag overlay and low spec mode get no hover animation.
+  const hasHoverEffect = !isOverlay && !isLowSpecModeOn;
   const scheduledDate = task.followUpDate ?? task.revisitDate;
   const scheduledDateLabel = task.followUpDate ? "Follow up" : "Revisit";
 
   return (
-    <article
-      // The target cursor frames cards while hovered (Settings → Appearance).
-      data-cursor-target={isOverlay ? undefined : ""}
+    <motion.article
+      whileHover={hasHoverEffect ? CARD_HOVER_LIFT : undefined}
+      transition={CARD_HOVER_TRANSITION}
       className={cn(
         "relative flex flex-col gap-3 rounded-lg border bg-card p-3 text-card-foreground shadow-xs",
         // No rotate/scale here: transforms skew the overlay's measured rect and break keyboard moves.
         isOverlay && "cursor-grabbing shadow-lg ring-2 ring-primary/40",
+        hasHoverEffect && "transition-[box-shadow,border-color] duration-200 hover:border-primary/40 hover:shadow-md",
       )}
     >
       <header className="flex items-start justify-between gap-2">
@@ -165,7 +175,7 @@ export function KanbanCardContent({ task, isOverlay = false }: KanbanCardContent
           )}
         </span>
       </footer>
-    </article>
+    </motion.article>
   );
 }
 

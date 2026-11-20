@@ -4,11 +4,9 @@ import { createContext, type ReactNode, useContext, useEffect, useState } from "
 import {
   DEFAULT_BUSINESS_STORAGE_KEY,
   DONE_COLUMN_HIDDEN_STORAGE_KEY,
-  FINE_POINTER_QUERY,
   LOW_SPEC_MODE_ATTRIBUTE,
   LOW_SPEC_MODE_STORAGE_KEY,
   REDUCED_MOTION_QUERY,
-  TARGET_CURSOR_STORAGE_KEY,
 } from "@/constants/device-preferences";
 import { readStoredValue, writeStoredValue } from "@/lib/browser-storage";
 import type { DevicePreferences, DevicePreferencesContextValue } from "@/types/device-preferences";
@@ -17,7 +15,6 @@ const DevicePreferencesContext = createContext<DevicePreferencesContextValue | n
 
 const DEFAULT_DEVICE_PREFERENCES: DevicePreferences = {
   isLowSpecModeOn: false,
-  isTargetCursorOn: false,
   isDoneColumnHidden: false,
   defaultBusinessId: null,
 };
@@ -31,11 +28,10 @@ type DevicePreferencesProviderProps = {
   children: ReactNode;
 };
 
-/** Low spec mode, the target cursor and board preferences, saved per browser. */
+/** Low spec mode and board preferences, saved per browser. */
 export function DevicePreferencesProvider({ children }: DevicePreferencesProviderProps) {
   // Defaults on the server; the stored choices are read after hydration.
   const [devicePreferences, setDevicePreferences] = useState<DevicePreferences>(DEFAULT_DEVICE_PREFERENCES);
-  const [hasFinePointer, setHasFinePointer] = useState(false);
 
   function updateDevicePreference<PreferenceName extends keyof DevicePreferences>(
     preferenceName: PreferenceName,
@@ -48,10 +44,6 @@ export function DevicePreferencesProvider({ children }: DevicePreferencesProvide
 
   function setLowSpecMode(isLowSpecModeOn: boolean) {
     updateDevicePreference("isLowSpecModeOn", isLowSpecModeOn, LOW_SPEC_MODE_STORAGE_KEY);
-  }
-
-  function setTargetCursor(isTargetCursorOn: boolean) {
-    updateDevicePreference("isTargetCursorOn", isTargetCursorOn, TARGET_CURSOR_STORAGE_KEY);
   }
 
   function setDoneColumnHidden(isDoneColumnHidden: boolean) {
@@ -71,11 +63,9 @@ export function DevicePreferencesProvider({ children }: DevicePreferencesProvide
         LOW_SPEC_MODE_STORAGE_KEY,
         window.matchMedia(REDUCED_MOTION_QUERY).matches,
       ),
-      isTargetCursorOn: readStoredBoolean(TARGET_CURSOR_STORAGE_KEY, false),
       isDoneColumnHidden: readStoredBoolean(DONE_COLUMN_HIDDEN_STORAGE_KEY, false),
       defaultBusinessId: readStoredValue(DEFAULT_BUSINESS_STORAGE_KEY) || null,
     });
-    setHasFinePointer(window.matchMedia(FINE_POINTER_QUERY).matches);
   }, []);
 
   useEffect(() => {
@@ -86,10 +76,7 @@ export function DevicePreferencesProvider({ children }: DevicePreferencesProvide
     <DevicePreferencesContext.Provider
       value={{
         ...devicePreferences,
-        isTargetCursorActive:
-          devicePreferences.isTargetCursorOn && !devicePreferences.isLowSpecModeOn && hasFinePointer,
         setLowSpecMode,
-        setTargetCursor,
         setDoneColumnHidden,
         setDefaultBusinessId,
       }}
