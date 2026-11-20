@@ -229,8 +229,8 @@ export default function LiveKanbanBoardProvider({ children }: LiveKanbanBoardPro
       p_owner_id: requireUserId(formValues.ownerName),
       p_priority: formValues.priority,
       p_due_date: formValues.dueDate,
-      p_turnaround_amount: formValues.estimatedTurnaround.amount,
-      p_turnaround_unit: formValues.estimatedTurnaround.unit,
+      p_turnaround_amount: formValues.estimatedTurnaround?.amount ?? null,
+      p_turnaround_unit: formValues.estimatedTurnaround?.unit ?? null,
       p_note: formValues.note,
       p_mentioned_user_ids: getMentionedUserIds(formValues.note),
     });
@@ -244,8 +244,8 @@ export default function LiveKanbanBoardProvider({ children }: LiveKanbanBoardPro
       p_owner_id: requireUserId(formValues.ownerName),
       p_priority: formValues.priority,
       p_due_date: formValues.dueDate,
-      p_turnaround_amount: formValues.estimatedTurnaround.amount,
-      p_turnaround_unit: formValues.estimatedTurnaround.unit,
+      p_turnaround_amount: formValues.estimatedTurnaround?.amount ?? null,
+      p_turnaround_unit: formValues.estimatedTurnaround?.unit ?? null,
       p_note: formValues.note,
       p_mentioned_user_ids: getMentionedUserIds(formValues.note),
     });

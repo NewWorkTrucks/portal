@@ -140,11 +140,13 @@ export function KanbanCardContent({ task, isOverlay = false }: KanbanCardContent
         </span>
 
         <span className="flex flex-wrap items-center justify-end gap-x-2 gap-y-1">
-          <span className="flex items-center gap-1" title="Estimated turnaround">
-            <Timer aria-hidden className="size-3" />
-            <span className="sr-only">Estimated turnaround</span>
-            {formatEstimatedTurnaround(task.estimatedTurnaround)}
-          </span>
+          {task.estimatedTurnaround && (
+            <span className="flex items-center gap-1" title="Estimated turnaround">
+              <Timer aria-hidden className="size-3" />
+              <span className="sr-only">Estimated turnaround</span>
+              {formatEstimatedTurnaround(task.estimatedTurnaround)}
+            </span>
+          )}
           {scheduledDate && (
             <span className="flex items-center gap-1" title={scheduledDateLabel}>
               <CalendarClock aria-hidden className="size-3" />
@@ -152,11 +154,13 @@ export function KanbanCardContent({ task, isOverlay = false }: KanbanCardContent
               {formatKanbanDate(scheduledDate)}
             </span>
           )}
-          <span className="flex items-center gap-1" title="Due date">
-            <CalendarDays aria-hidden className="size-3" />
-            <span className="sr-only">Due</span>
-            {formatKanbanDate(task.dueDate)}
-          </span>
+          {task.dueDate && (
+            <span className="flex items-center gap-1" title="Due date">
+              <CalendarDays aria-hidden className="size-3" />
+              <span className="sr-only">Due</span>
+              {formatKanbanDate(task.dueDate)}
+            </span>
+          )}
         </span>
       </footer>
     </article>

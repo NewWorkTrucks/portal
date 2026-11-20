@@ -9,9 +9,14 @@ function addDaysToIsoDate(isoDate: string, days: number): string {
 }
 
 function matchesDueDateFilter(task: KanbanTask, dueDateFilter: KanbanDueDateFilter, todayIsoDate: string) {
+  if (dueDateFilter === "any") {
+    return true;
+  }
+  // A card without a due date isn't overdue or due soon.
+  if (!task.dueDate) {
+    return false;
+  }
   switch (dueDateFilter) {
-    case "any":
-      return true;
     case "overdue":
       // Finished work isn't overdue.
       return task.status !== "done" && task.dueDate < todayIsoDate;

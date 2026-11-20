@@ -14,7 +14,8 @@ import type { KanbanDeferralValues } from "@/types/kanban-stages";
 import type { Mentionable } from "@/types/mention";
 
 type KanbanDeferralFormProps = {
-  initialTurnaround: KanbanEstimatedTurnaround;
+  /** The card's current turnaround, or null if it was never set. */
+  initialTurnaround: KanbanEstimatedTurnaround | null;
   /** E2-2: deferring a card that hasn't started also notifies Leadership. */
   isCantStartDeferral: boolean;
   previousDeferralCount: number;
@@ -38,8 +39,10 @@ export default function KanbanDeferralForm({
   onCancel,
 }: KanbanDeferralFormProps) {
   const [reason, setReason] = useState("");
-  const [turnaroundAmountInput, setTurnaroundAmountInput] = useState(String(initialTurnaround.amount));
-  const [turnaroundUnit, setTurnaroundUnit] = useState(initialTurnaround.unit);
+  const [turnaroundAmountInput, setTurnaroundAmountInput] = useState(
+    initialTurnaround ? String(initialTurnaround.amount) : "",
+  );
+  const [turnaroundUnit, setTurnaroundUnit] = useState(initialTurnaround?.unit ?? "days");
   const [revisitDate, setRevisitDate] = useState("");
   const [formErrors, setFormErrors] = useState<KanbanDeferralErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);

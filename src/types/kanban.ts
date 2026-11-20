@@ -47,8 +47,10 @@ export type KanbanTask = {
   status: KanbanStatus;
   ownerName: string;
   priority: KanbanTaskPriority;
-  dueDate: string;
-  estimatedTurnaround: KanbanEstimatedTurnaround;
+  /** Optional when the card is created; null until someone sets it. */
+  dueDate: string | null;
+  /** Optional when the card is created; null until someone sets it (E2-1). */
+  estimatedTurnaround: KanbanEstimatedTurnaround | null;
   latestNote: string;
   /** Order within the column (live mode); mock mode uses array order. */
   position?: number;
@@ -81,7 +83,7 @@ export type KanbanTaskFormValues = Pick<
   KanbanTask,
   "title" | "description" | "status" | "ownerName" | "priority" | "dueDate" | "estimatedTurnaround"
 > & {
-  /** Required explanation for this change; recorded in the audit log and shown as the card's latest note. */
+  /** Explanation for this change, recorded in the audit log and shown as the card's latest note. Required on edits, optional on create. */
   note: string;
 };
 

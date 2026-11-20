@@ -46,10 +46,13 @@ export function toKanbanTask(
     ownerName: nameByUserId.get(taskRow.owner_id) ?? "Unknown",
     priority: taskRow.priority as KanbanTaskPriority,
     dueDate: taskRow.due_date,
-    estimatedTurnaround: {
-      amount: Number(taskRow.estimated_turnaround_amount),
-      unit: taskRow.estimated_turnaround_unit as KanbanTurnaroundUnit,
-    },
+    estimatedTurnaround:
+      taskRow.estimated_turnaround_amount === null
+        ? null
+        : {
+            amount: Number(taskRow.estimated_turnaround_amount),
+            unit: taskRow.estimated_turnaround_unit as KanbanTurnaroundUnit,
+          },
     latestNote: taskRow.latest_note,
     position: taskRow.position,
     attachments,

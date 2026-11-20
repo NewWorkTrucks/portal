@@ -30,6 +30,7 @@ import type {
   KanbanTaskFormMode,
   KanbanTaskFormValues,
   KanbanTaskPriority,
+  KanbanTurnaroundUnit,
 } from "@/types/kanban";
 import type { Mentionable } from "@/types/mention";
 import type { TeamMember } from "@/types/team";
@@ -60,10 +61,13 @@ type KanbanTaskFormProps = {
 };
 
 function validateKanbanTaskForm(
+  mode: KanbanTaskFormMode,
   values: KanbanTaskFormValues,
   turnaroundAmountInput: string,
 ): KanbanTaskFormErrors {
   const formErrors: KanbanTaskFormErrors = {};
+  // A new card only needs a title and an owner; edits also need the schedule and a note (E1-5).
+  const isEditing = mode === "edit";
 
   if (!values.title.trim()) {
     formErrors.title = "Title is required.";
@@ -71,13 +75,14 @@ function validateKanbanTaskForm(
   if (!values.ownerName) {
     formErrors.ownerName = "Choose an owner.";
   }
-  if (!values.dueDate) {
+  if (isEditing && !values.dueDate) {
     formErrors.dueDate = "Due date is required.";
   }
-  if (parseTurnaroundAmount(turnaroundAmountInput) === null) {
+  const isTurnaroundEmpty = !turnaroundAmountInput.trim();
+  if ((isEditing || !isTurnaroundEmpty) && parseTurnaroundAmount(turnaroundAmountInput) === null) {
     formErrors.estimatedTurnaround = "Enter an estimated turnaround greater than 0.";
   }
-  if (!values.note.trim()) {
+  if (isEditing && !values.note.trim()) {
     formErrors.note = "A note is required.";
   }
 
@@ -86,8 +91,9 @@ function validateKanbanTaskForm(
 
 /**
  * Create/edit form for a Kanban task. Not tied to a dialog, so it can be reused anywhere.
- * Owner, due date and estimated turnaround are required, so no card is saved without them
- * (E1-2, E2-1). Every save also needs a note, which goes into the audit log (E1-5).
+ * A new card needs only a title and an owner; the description, due date, estimated turnaround
+ * and note can be added later. Edits also require the due date, turnaround and a note, which
+ * goes into the audit log (E1-2, E1-5, E2-1).
  */
 export default function KanbanTaskForm({
   mode,
@@ -101,7 +107,10 @@ export default function KanbanTaskForm({
 }: KanbanTaskFormProps) {
   const [formValues, setFormValues] = useState<KanbanTaskFormValues>(initialValues);
   const [turnaroundAmountInput, setTurnaroundAmountInput] = useState(
-    initialValues.estimatedTurnaround.amount > 0 ? String(initialValues.estimatedTurnaround.amount) : "",
+    initialValues.estimatedTurnaround ? String(initialValues.estimatedTurnaround.amount) : "",
+  );
+  const [turnaroundUnit, setTurnaroundUnit] = useState<KanbanTurnaroundUnit>(
+    initialValues.estimatedTurnaround?.unit ?? "hours",
   );
   const [formErrors, setFormErrors] = useState<KanbanTaskFormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -121,13 +130,12 @@ export default function KanbanTaskForm({
       ...formValues,
       title: formValues.title.trim(),
       description: formValues.description.trim(),
-      estimatedTurnaround: {
-        amount: Number(turnaroundAmountInput),
-        unit: formValues.estimatedTurnaround.unit,
-      },
+      estimatedTurnaround: turnaroundAmountInput.trim()
+        ? { amount: Number(turnaroundAmountInput), unit: turnaroundUnit }
+        : null,
       note: formValues.note.trim(),
     };
-    const validationErrors = validateKanbanTaskForm(trimmedFormValues, turnaroundAmountInput);
+    const validationErrors = validateKanbanTaskForm(mode, trimmedFormValues, turnaroundAmountInput);
 
     if (Object.keys(validationErrors).length > 0) {
       setFormErrors(validationErrors);
@@ -141,6 +149,9 @@ export default function KanbanTaskForm({
       setIsSubmitting(false);
     }
   }
+
+  const optionalOnCreateLabel =
+    mode === "create" ? <span className="font-normal text-muted-foreground">(optional)</span> : null;
 
   return (
     <form onSubmit={handleSubmitForm} noValidate className="flex flex-col gap-6">
@@ -158,7 +169,9 @@ export default function KanbanTaskForm({
         </Field>
 
         <Field>
-          <FieldLabel htmlFor="kanban-task-description">Description</FieldLabel>
+          <FieldLabel htmlFor="kanban-task-description">
+            Description <span className="font-normal text-muted-foreground">(optional)</span>
+          </FieldLabel>
           <Textarea
             id="kanban-task-description"
             value={formValues.description}
@@ -248,23 +261,27 @@ export default function KanbanTaskForm({
 
         <div className="grid grid-cols-2 gap-4">
           <Field data-invalid={Boolean(formErrors.dueDate)}>
-            <FieldLabel htmlFor="kanban-task-due-date">Due date</FieldLabel>
+            <FieldLabel htmlFor="kanban-task-due-date">
+              Due date {optionalOnCreateLabel}
+            </FieldLabel>
             <Input
               id="kanban-task-due-date"
               type="date"
-              value={formValues.dueDate}
-              onChange={(event) => updateFormValue("dueDate", event.target.value)}
+              value={formValues.dueDate ?? ""}
+              onChange={(event) => updateFormValue("dueDate", event.target.value || null)}
               aria-invalid={Boolean(formErrors.dueDate)}
             />
             <FieldError>{formErrors.dueDate}</FieldError>
           </Field>
 
           <Field data-invalid={Boolean(formErrors.estimatedTurnaround)}>
-            <FieldLabel htmlFor="kanban-task-turnaround">Estimated turnaround</FieldLabel>
+            <FieldLabel htmlFor="kanban-task-turnaround">
+              Estimated turnaround {optionalOnCreateLabel}
+            </FieldLabel>
             <TurnaroundInput
               id="kanban-task-turnaround"
               amountInput={turnaroundAmountInput}
-              unit={formValues.estimatedTurnaround.unit}
+              unit={turnaroundUnit}
               onChangeAmountInput={(amountInput) => {
                 setTurnaroundAmountInput(amountInput);
                 setFormErrors((previousFormErrors) => ({
@@ -272,9 +289,7 @@ export default function KanbanTaskForm({
                   estimatedTurnaround: undefined,
                 }));
               }}
-              onChangeUnit={(unit) =>
-                updateFormValue("estimatedTurnaround", { ...formValues.estimatedTurnaround, unit })
-              }
+              onChangeUnit={setTurnaroundUnit}
               aria-invalid={Boolean(formErrors.estimatedTurnaround)}
             />
             <FieldError>{formErrors.estimatedTurnaround}</FieldError>
@@ -283,7 +298,7 @@ export default function KanbanTaskForm({
 
         <Field data-invalid={Boolean(formErrors.note)}>
           <FieldLabel htmlFor="kanban-task-note">
-            {mode === "create" ? "Note" : "What changed and why?"}
+            {mode === "create" ? <>Note {optionalOnCreateLabel}</> : "What changed and why?"}
           </FieldLabel>
           <MentionTextarea
             id="kanban-task-note"
@@ -299,7 +314,8 @@ export default function KanbanTaskForm({
             rows={2}
           />
           <FieldDescription>
-            Required. Type @ to mention someone. Saved to the audit log and shown on the card.
+            {mode === "create" ? "Type" : "Required. Type"} @ to mention someone. Saved to the audit log
+            and shown on the card.
           </FieldDescription>
           <FieldError>{formErrors.note}</FieldError>
         </Field>

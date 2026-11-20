@@ -8,6 +8,8 @@ import type {
   KanbanTasksByStatus,
 } from "@/types/kanban";
 
+const NOT_SET_LABEL = "Not set";
+
 const KANBAN_DATE_FORMATTER = new Intl.DateTimeFormat("en-US", {
   month: "short",
   day: "numeric",
@@ -103,7 +105,10 @@ export function getColumnTitle(status: KanbanStatus): string {
 }
 
 /** Formats a date-only ISO string (YYYY-MM-DD) without shifting it across time zones. */
-export function formatKanbanDate(isoDate: string): string {
+export function formatKanbanDate(isoDate: string | null): string {
+  if (!isoDate) {
+    return NOT_SET_LABEL;
+  }
   return KANBAN_DATE_FORMATTER.format(new Date(`${isoDate}T00:00:00Z`));
 }
 
@@ -142,7 +147,11 @@ export function removeTaskById(
   };
 }
 
-export function formatEstimatedTurnaround({ amount, unit }: KanbanEstimatedTurnaround): string {
+export function formatEstimatedTurnaround(estimatedTurnaround: KanbanEstimatedTurnaround | null): string {
+  if (!estimatedTurnaround) {
+    return NOT_SET_LABEL;
+  }
+  const { amount, unit } = estimatedTurnaround;
   const unitLabel = unit === "hours" ? "hour" : "day";
   return `${amount} ${unitLabel}${amount === 1 ? "" : "s"}`;
 }

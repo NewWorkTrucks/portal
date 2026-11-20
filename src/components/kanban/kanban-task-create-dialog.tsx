@@ -18,8 +18,8 @@ const EMPTY_TASK_FORM_VALUES: KanbanTaskFormValues = {
   status: "not-started",
   ownerName: "",
   priority: "medium",
-  dueDate: "",
-  estimatedTurnaround: { amount: 0, unit: "hours" },
+  dueDate: null,
+  estimatedTurnaround: null,
   note: "",
 };
 
@@ -44,7 +44,7 @@ export default function KanbanTaskCreateDialog({
         <DialogHeader>
           <DialogTitle>New task</DialogTitle>
           <DialogDescription>
-            Every task needs an owner, a due date, an estimated turnaround and a note.
+            A task needs a title and an owner. The rest can be added later.
           </DialogDescription>
         </DialogHeader>
 

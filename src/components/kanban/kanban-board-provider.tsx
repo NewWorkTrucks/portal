@@ -54,6 +54,9 @@ import type {
 } from "@/types/kanban";
 import type { KanbanDailyUpdate, KanbanStageTransition } from "@/types/kanban-stages";
 
+/** Logged for a card created without a note; matches the database's kanban_create_task. */
+const CREATED_WITHOUT_NOTE = "Card created.";
+
 /** Filled by the mock provider below or by LiveKanbanBoardProvider, depending on data mode. */
 export const KanbanBoardContext = createContext<KanbanBoardContextValue | null>(null);
 
@@ -173,7 +176,15 @@ export function KanbanBoardProvider({ initialTasks, children }: KanbanBoardProvi
       ...previousTasksByStatus,
       [newTask.status]: [newTask, ...previousTasksByStatus[newTask.status]],
     }));
-    await recordAuditLogEntry(newTask, "created", `Created in ${getColumnTitle(newTask.status)} for ${newTask.ownerName}, est. ${formatEstimatedTurnaround(newTask.estimatedTurnaround)}`, note);
+    const turnaroundSummary = newTask.estimatedTurnaround
+      ? `, est. ${formatEstimatedTurnaround(newTask.estimatedTurnaround)}`
+      : "";
+    await recordAuditLogEntry(
+      newTask,
+      "created",
+      `Created in ${getColumnTitle(newTask.status)} for ${newTask.ownerName}${turnaroundSummary}`,
+      note || CREATED_WITHOUT_NOTE,
+    );
   }
 
   function assertTaskInCurrentBusiness(task: Pick<KanbanTask, "businessId">) {

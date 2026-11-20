@@ -42,7 +42,7 @@ export const ONBOARDING_TOUR_STEPS: OnboardingTourStep[] = [
     target: "new-task",
     title: "Create a task",
     description:
-      "Every task needs an owner, a due date, an estimated turnaround and a note explaining it.",
+      "A new task needs only a title and an owner. Add the due date, turnaround and a note now or later.",
     side: "bottom",
   },
   {
