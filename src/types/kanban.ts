@@ -1,3 +1,4 @@
+import type { LucideIcon } from "lucide-react";
 import type { Dispatch, SetStateAction } from "react";
 import type { KanbanAttachment } from "@/types/attachment";
 import type { KanbanAuditLogEntry } from "@/types/audit-log";
@@ -142,6 +143,33 @@ export type KanbanTaskActions = {
   onClickRemoveAttachment: (task: KanbanTask, attachment: KanbanAttachment) => void;
 };
 
+export type KanbanBoardView = "board" | "list";
+
+export type KanbanBoardViewOption = {
+  value: KanbanBoardView;
+  label: string;
+  Icon: LucideIcon;
+};
+
+export type KanbanViewSwitcherProps = {
+  selectedView: KanbanBoardView;
+  onSelectView: (view: KanbanBoardView) => void;
+};
+
+export type KanbanTaskMenuProps = {
+  task: KanbanTask;
+  teamMembers: TeamMember[];
+  taskActions: KanbanTaskActions;
+};
+
+export type KanbanTaskListProps = {
+  tasks: KanbanTask[];
+  /** Cards before filtering, to tell "no matches" apart from an empty board. */
+  totalTaskCount: number;
+  teamMembers: TeamMember[];
+  taskActions: KanbanTaskActions;
+};
+
 export type KanbanBoardContextValue = {
   teamMembers: TeamMember[];
   mentionables: Mentionable[];
@@ -173,6 +201,8 @@ export type KanbanBoardContextValue = {
   /** `files` are posted with the update and shown under it in the activity log (E1-4). */
   postDailyUpdate: (task: KanbanTask, dailyUpdate: KanbanDailyUpdate, files?: File[]) => Promise<void>;
   addTaskUpdate: (task: KanbanTask, note: string, files?: File[]) => Promise<void>;
+  /** Replies to an update. Doesn't change the card or its latest note. */
+  addUpdateComment: (task: KanbanTask, parentActivityId: string, note: string) => Promise<void>;
   attachFiles: (task: KanbanTask, files: File[], note: string) => Promise<void>;
   removeAttachment: (task: KanbanTask, attachment: KanbanAttachment, note: string) => Promise<void>;
   /** What the current user may do with a card, based on their role and ownership (E4-1). */

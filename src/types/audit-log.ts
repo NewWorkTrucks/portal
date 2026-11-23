@@ -7,6 +7,7 @@ export type KanbanAuditLogAction =
   | "archived"
   | "daily-update"
   | "update"
+  | "comment"
   | "attached"
   | "attachment-removed";
 
@@ -26,4 +27,6 @@ export type KanbanAuditLogEntry = {
   readonly note: string;
   /** Everyone the note's @mentions notify, after group expansion and auto-include rules. */
   readonly mentionedNames: readonly string[];
+  /** The update this entry replies to, when it is a comment. */
+  readonly parentActivityId?: string;
 };

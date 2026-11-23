@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { KANBAN_DAILY_UPDATE_HEALTH_OPTIONS } from "@/constants/kanban-stages";
+import { getNoteLengthError } from "@/lib/rich-note";
 import type { KanbanDailyUpdate, KanbanDailyUpdateHealth } from "@/types/kanban-stages";
 import type { Mentionable } from "@/types/mention";
 
@@ -24,7 +25,7 @@ type KanbanDailyUpdateFormProps = {
   onCancel?: () => void;
 };
 
-type KanbanDailyUpdateErrors = Partial<Record<"progress" | "nextSteps", string>>;
+type KanbanDailyUpdateErrors = Partial<Record<"progress" | "nextSteps" | "issues", string>>;
 
 /** E2-3: the workday update for a card in Working on It, so someone else could take it over. */
 export default function KanbanDailyUpdateForm({
@@ -60,6 +61,12 @@ export default function KanbanDailyUpdateForm({
     }
     if (!formValues.nextSteps.trim()) {
       validationErrors.nextSteps = "List the next steps.";
+    }
+    for (const fieldName of ["progress", "nextSteps", "issues"] as const) {
+      const fieldLengthError = getNoteLengthError(formValues[fieldName]);
+      if (fieldLengthError) {
+        validationErrors[fieldName] = fieldLengthError;
+      }
     }
     if (Object.keys(validationErrors).length > 0) {
       setFormErrors(validationErrors);
@@ -134,7 +141,7 @@ export default function KanbanDailyUpdateForm({
           <FieldError>{formErrors.nextSteps}</FieldError>
         </Field>
 
-        <Field>
+        <Field data-invalid={Boolean(formErrors.issues)}>
           <FieldLabel htmlFor="kanban-daily-update-issues">Issues (optional)</FieldLabel>
           <RichNoteEditor
             id="kanban-daily-update-issues"
@@ -142,8 +149,10 @@ export default function KanbanDailyUpdateForm({
             onChange={(fieldValue) => updateFormValue("issues", fieldValue)}
             mentionables={mentionables}
             placeholder="Blockers or dependencies. Leave empty if none."
+            aria-invalid={Boolean(formErrors.issues)}
             rows={2}
           />
+          <FieldError>{formErrors.issues}</FieldError>
         </Field>
       </FieldGroup>
 

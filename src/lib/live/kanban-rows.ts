@@ -107,6 +107,7 @@ export function toKanbanAuditLogEntry(
     mentionedNames: activityRow.mentioned_user_ids
       .map((userId) => nameByUserId.get(userId))
       .filter((name): name is string => Boolean(name)),
+    parentActivityId: activityRow.parent_activity_id ?? undefined,
   };
 }
 

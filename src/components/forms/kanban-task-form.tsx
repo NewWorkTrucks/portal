@@ -25,6 +25,7 @@ import { KANBAN_TASK_PRIORITY_OPTIONS } from "@/constants/kanban-task-priorities
 import { KANBAN_CREATABLE_STATUSES } from "@/constants/kanban-stages";
 import TurnaroundInput from "@/components/turnaround-input";
 import { parseTurnaroundAmount } from "@/lib/kanban";
+import { getNoteLengthError } from "@/lib/rich-note";
 import type {
   KanbanStatus,
   KanbanTaskFormMode,
@@ -84,6 +85,10 @@ function validateKanbanTaskForm(
   }
   if (isEditing && !values.note.trim()) {
     formErrors.note = "A note is required.";
+  }
+  const noteLengthError = getNoteLengthError(values.note);
+  if (noteLengthError) {
+    formErrors.note = noteLengthError;
   }
 
   return formErrors;

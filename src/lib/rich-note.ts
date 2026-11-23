@@ -1,5 +1,6 @@
 import type { JSONContent } from "@tiptap/react";
-import type { RichNoteBlock, RichNoteInline } from "@/types/rich-note";
+import { MAX_NOTE_FIELD_LENGTH } from "@/constants/note-limits";
+import type { RichNoteBlock, RichNoteInline, RichNoteSerializeStep } from "@/types/rich-note";
 
 // Notes are stored as plain text in a small Markdown subset, so the database, search, the
 // audit log and older clients all keep working with a string:
@@ -55,31 +56,61 @@ function serializeInlineNodes(nodes: JSONContent[] | undefined): string {
     .join("");
 }
 
-function serializeBlocks(nodes: JSONContent[] | undefined, depth: number): string[] {
+/**
+ * Walks the document with its own stack and appends lines one at a time, because a pasted note
+ * can be nested or long enough to overflow the call stack with recursion or spread arguments.
+ */
+function serializeBlocks(rootNodes: JSONContent[] | undefined): string[] {
   const lines: string[] = [];
-  const indent = "  ".repeat(depth);
+  const pendingSteps: RichNoteSerializeStep[] = [];
 
-  for (const node of nodes ?? []) {
+  function queueStepsInOrder(steps: RichNoteSerializeStep[]) {
+    for (let stepIndex = steps.length - 1; stepIndex >= 0; stepIndex -= 1) {
+      pendingSteps.push(steps[stepIndex]);
+    }
+  }
+
+  queueStepsInOrder((rootNodes ?? []).map((node) => ({ node, depth: 0 })));
+
+  while (pendingSteps.length > 0) {
+    const step = pendingSteps.pop() as RichNoteSerializeStep;
+    if (typeof step === "string") {
+      lines.push(step);
+      continue;
+    }
+
+    const { node, depth } = step;
+    const indent = "  ".repeat(depth);
+    // Only top-level blocks are separated by a blank line.
+    const isTopLevel = depth === 0;
+
     if (node.type === "paragraph") {
       const paragraphText = serializeInlineNodes(node.content);
       if (paragraphText.trim()) {
-        lines.push(
-          ...paragraphText.split("\n").map((paragraphLine) => indent + escapeLineStart(paragraphLine)),
-          "",
-        );
+        for (const paragraphLine of paragraphText.split("\n")) {
+          lines.push(indent + escapeLineStart(paragraphLine));
+        }
+        if (isTopLevel) {
+          lines.push("");
+        }
       }
     } else if (node.type === "bulletList" || node.type === "orderedList") {
+      const listSteps: RichNoteSerializeStep[] = [];
       (node.content ?? []).forEach((listItem, itemIndex) => {
         const marker = node.type === "bulletList" ? "- " : `${itemIndex + 1}. `;
         const [firstChild, ...nestedChildren] = listItem.content ?? [];
         const itemText =
           firstChild?.type === "paragraph" ? serializeInlineNodes(firstChild.content).replace(/\n/g, " ") : "";
-        lines.push(`${indent}${marker}${itemText}`);
+        listSteps.push(`${indent}${marker}${itemText}`);
         // Nested lists sit one level deeper; extra paragraphs in an item become their own lines.
-        const nestedLines = serializeBlocks(nestedChildren, depth + 1).filter((nestedLine) => nestedLine !== "");
-        lines.push(...nestedLines);
+        for (const nestedChild of nestedChildren) {
+          listSteps.push({ node: nestedChild, depth: depth + 1 });
+        }
       });
-      lines.push("");
+      if (isTopLevel) {
+        listSteps.push("");
+      }
+      queueStepsInOrder(listSteps);
     }
   }
   return lines;
@@ -87,10 +118,18 @@ function serializeBlocks(nodes: JSONContent[] | undefined, depth: number): strin
 
 /** The editor's document as note text (see the format above). Empty when there's nothing typed. */
 export function serializeRichNote(document: JSONContent): string {
-  return serializeBlocks(document.content, 0)
+  return serializeBlocks(document.content)
     .join("\n")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
+}
+
+/** The form error for a note field that's too long, or null when its length is fine. */
+export function getNoteLengthError(note: string): string | null {
+  const noteLength = note.trim().length;
+  return noteLength > MAX_NOTE_FIELD_LENGTH
+    ? `Keep this to ${MAX_NOTE_FIELD_LENGTH.toLocaleString("en-US")} characters or fewer (now ${noteLength.toLocaleString("en-US")}).`
+    : null;
 }
 
 // Parsing note text for display ---------------------------------------------------------------

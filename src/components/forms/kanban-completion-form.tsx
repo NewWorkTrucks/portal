@@ -6,6 +6,7 @@ import RichNoteEditor from "@/components/rich-note-editor";
 import { Button } from "@/components/ui/button";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import UpdateFilesField from "@/components/update-files-field";
+import { getNoteLengthError } from "@/lib/rich-note";
 import type { KanbanCompletionValues } from "@/types/kanban-stages";
 import type { Mentionable } from "@/types/mention";
 
@@ -66,8 +67,11 @@ export default function KanbanCompletionForm({
 
     const validationErrors: Partial<Record<keyof KanbanCompletionValues, string>> = {};
     for (const completionField of COMPLETION_FIELDS) {
+      const fieldLengthError = getNoteLengthError(formValues[completionField.name]);
       if (!formValues[completionField.name].trim()) {
         validationErrors[completionField.name] = completionField.error;
+      } else if (fieldLengthError) {
+        validationErrors[completionField.name] = fieldLengthError;
       }
     }
     if (Object.keys(validationErrors).length > 0) {

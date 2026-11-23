@@ -37,6 +37,11 @@ export async function postKanbanTaskUpdate(taskId: string, note: string) {
   window.alert(`TODO: card update endpoint\n\nTask: ${taskId}\nNote: ${note}`);
 }
 
+export async function postKanbanUpdateComment(parentActivityId: string, note: string) {
+  // TODO: Replace with the update-comment endpoint (kanban_post_update_comment).
+  window.alert(`TODO: update comment endpoint\n\nUpdate: ${parentActivityId}\nComment: ${note}`);
+}
+
 /** Uploads files and returns their stored metadata. */
 export async function uploadKanbanAttachments(
   taskId: string,

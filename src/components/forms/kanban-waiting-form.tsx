@@ -7,6 +7,7 @@ import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/c
 import UpdateFilesField from "@/components/update-files-field";
 import { Input } from "@/components/ui/input";
 import { getTodayIsoDate } from "@/lib/kanban";
+import { getNoteLengthError } from "@/lib/rich-note";
 import type { KanbanWaitingValues } from "@/types/kanban-stages";
 import type { Mentionable } from "@/types/mention";
 
@@ -49,6 +50,12 @@ export default function KanbanWaitingForm({ mentionables, onSubmit, canAttachFil
     }
     if (!trimmedValues.waitingOnWho) {
       validationErrors.waitingOnWho = "Say who you're waiting on.";
+    }
+    for (const fieldName of ["waitingOnWhat", "waitingOnWho"] as const) {
+      const fieldLengthError = getNoteLengthError(trimmedValues[fieldName]);
+      if (fieldLengthError) {
+        validationErrors[fieldName] = fieldLengthError;
+      }
     }
     if (!trimmedValues.contactedDate) {
       validationErrors.contactedDate = "Enter when you contacted them.";

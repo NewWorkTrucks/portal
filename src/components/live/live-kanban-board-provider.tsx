@@ -357,6 +357,14 @@ export default function LiveKanbanBoardProvider({ children }: LiveKanbanBoardPro
     });
   }
 
+  async function addUpdateComment(_task: KanbanTask, parentActivityId: string, note: string) {
+    await callKanbanFunction("kanban_post_update_comment", {
+      p_parent_activity_id: parentActivityId,
+      p_note: note,
+      p_mentioned_user_ids: getMentionedUserIds(note),
+    });
+  }
+
   async function attachFiles(task: KanbanTask, files: File[], note: string) {
     if (!supabase) {
       return;
@@ -447,6 +455,7 @@ export default function LiveKanbanBoardProvider({ children }: LiveKanbanBoardPro
         reorderTask,
         postDailyUpdate,
         addTaskUpdate,
+        addUpdateComment,
         attachFiles,
         removeAttachment,
         getTaskPermissions: (task) => getKanbanTaskPermissions(currentUser, task),

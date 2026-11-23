@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import UserAvatar from "@/components/user-avatar";
+import { getNoteLengthError } from "@/lib/rich-note";
 import type { KanbanReviewRequestValues } from "@/types/kanban-stages";
 import type { Mentionable } from "@/types/mention";
 import type { TeamMember } from "@/types/team";
@@ -47,8 +48,11 @@ export default function KanbanReviewRequestForm({
     if (!reviewerName) {
       validationErrors.reviewerName = "Pick a reviewer.";
     }
+    const noteLengthError = getNoteLengthError(note);
     if (!note.trim()) {
       validationErrors.note = "A note is required.";
+    } else if (noteLengthError) {
+      validationErrors.note = noteLengthError;
     }
     if (Object.keys(validationErrors).length > 0) {
       setFormErrors(validationErrors);

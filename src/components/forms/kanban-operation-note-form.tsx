@@ -1,5 +1,6 @@
 "use client";
 
+import { getNoteLengthError } from "@/lib/rich-note";
 import type { LucideIcon } from "lucide-react";
 import { type FormEvent, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -48,6 +49,11 @@ export default function KanbanOperationNoteForm({
 
     if (!trimmedNote) {
       setNoteError("A note is required.");
+      return;
+    }
+    const noteLengthError = getNoteLengthError(trimmedNote);
+    if (noteLengthError) {
+      setNoteError(noteLengthError);
       return;
     }
 

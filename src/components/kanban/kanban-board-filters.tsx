@@ -2,6 +2,7 @@
 
 import { ChevronDown, Flag, ListFilter, Search, UserRound, X } from "lucide-react";
 import type { ReactNode } from "react";
+import KanbanViewSwitcher from "@/components/kanban/kanban-view-switcher";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -20,6 +21,7 @@ import { EMPTY_KANBAN_TASK_FILTERS, KANBAN_DUE_DATE_FILTER_OPTIONS } from "@/con
 import { KANBAN_TASK_PRIORITY_OPTIONS } from "@/constants/kanban-task-priorities";
 import { countActiveKanbanTaskFilters, toggleListValue } from "@/lib/kanban-filters";
 import { cn } from "@/lib/utils";
+import type { KanbanBoardView } from "@/types/kanban";
 import type { KanbanDueDateFilter, KanbanTaskFilters } from "@/types/kanban-filters";
 import type { TeamMember } from "@/types/team";
 
@@ -27,8 +29,8 @@ type KanbanBoardFiltersProps = {
   filters: KanbanTaskFilters;
   onChangeFilters: (filters: KanbanTaskFilters) => void;
   teamMembers: TeamMember[];
-  visibleTaskCount: number;
-  totalTaskCount: number;
+  selectedView: KanbanBoardView;
+  onSelectView: (view: KanbanBoardView) => void;
 };
 
 type FilterDropdownProps = {
@@ -79,8 +81,8 @@ export default function KanbanBoardFilters({
   filters,
   onChangeFilters,
   teamMembers,
-  visibleTaskCount,
-  totalTaskCount,
+  selectedView,
+  onSelectView,
 }: KanbanBoardFiltersProps) {
   const activeFilterCount = countActiveKanbanTaskFilters(filters);
   const dueDateOption =
@@ -220,11 +222,9 @@ export default function KanbanBoardFilters({
         </Button>
       )}
 
-      <p role="status" className="ml-auto text-xs text-muted-foreground tabular-nums">
-        {activeFilterCount > 0
-          ? `Showing ${visibleTaskCount} of ${totalTaskCount} cards`
-          : `${totalTaskCount} cards`}
-      </p>
+      <div className="ml-auto">
+        <KanbanViewSwitcher selectedView={selectedView} onSelectView={onSelectView} />
+      </div>
     </section>
   );
 }

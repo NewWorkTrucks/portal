@@ -1,5 +1,6 @@
 import {
   Archive,
+  MessageCircle,
   ArrowRightLeft,
   ClipboardCheck,
   FileMinus,
@@ -25,6 +26,10 @@ export const AUDIT_LOG_ACTION_DISPLAY: Record<
   archived: { label: "Archived", Icon: Archive },
   "daily-update": { label: "Daily update", Icon: ClipboardCheck },
   update: { label: "Update", Icon: MessageSquarePlus },
+  comment: { label: "Comment", Icon: MessageCircle },
   attached: { label: "Attached files", Icon: Paperclip },
   "attachment-removed": { label: "Removed file", Icon: FileMinus },
 };
+
+/** Written progress posts, shown in a card's Updates tab. */
+export const UPDATE_AUDIT_LOG_ACTIONS: readonly KanbanAuditLogAction[] = ["update", "daily-update"];

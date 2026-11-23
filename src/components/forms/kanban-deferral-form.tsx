@@ -9,6 +9,7 @@ import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/c
 import UpdateFilesField from "@/components/update-files-field";
 import { Input } from "@/components/ui/input";
 import { getTodayIsoDate, parseTurnaroundAmount } from "@/lib/kanban";
+import { getNoteLengthError } from "@/lib/rich-note";
 import type { KanbanEstimatedTurnaround } from "@/types/kanban";
 import type { KanbanDeferralValues } from "@/types/kanban-stages";
 import type { Mentionable } from "@/types/mention";
@@ -53,10 +54,13 @@ export default function KanbanDeferralForm({
 
     const turnaroundAmount = parseTurnaroundAmount(turnaroundAmountInput);
     const validationErrors: KanbanDeferralErrors = {};
+    const reasonLengthError = getNoteLengthError(reason);
     if (!reason.trim()) {
       validationErrors.reason = isCantStartDeferral
         ? "Explain why the work can't start."
         : "Give a business reason for deferring.";
+    } else if (reasonLengthError) {
+      validationErrors.reason = reasonLengthError;
     }
     if (turnaroundAmount === null) {
       validationErrors.estimatedTurnaround = "Enter a new turnaround greater than 0.";

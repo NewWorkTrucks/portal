@@ -40,7 +40,7 @@ type KanbanCardActionsDialogProps = {
   onOpenChange: (isOpen: boolean) => void;
 };
 
-/** The card menu for touch screens, opened by holding a card. */
+/** The card menu opened by holding a card on touch screens, or from a list row's actions button. */
 export default function KanbanCardActionsDialog({
   task,
   teamMembers,

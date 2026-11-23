@@ -79,6 +79,7 @@ export type KanbanActivityRow = {
   from_status: string | null;
   to_status: string | null;
   occurred_at: string;
+  parent_activity_id: string | null;
 };
 
 export type MentionGroupRow = {

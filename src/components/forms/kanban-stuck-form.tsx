@@ -6,6 +6,7 @@ import RichNoteEditor from "@/components/rich-note-editor";
 import { Button } from "@/components/ui/button";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import UpdateFilesField from "@/components/update-files-field";
+import { getNoteLengthError } from "@/lib/rich-note";
 import type { KanbanStuckValues } from "@/types/kanban-stages";
 import type { Mentionable } from "@/types/mention";
 
@@ -54,8 +55,11 @@ export default function KanbanStuckForm({ mentionables, onSubmit, canAttachFiles
 
     const validationErrors: Partial<Record<keyof KanbanStuckValues, string>> = {};
     for (const stuckField of STUCK_FIELDS) {
+      const fieldLengthError = getNoteLengthError(formValues[stuckField.name]);
       if (!formValues[stuckField.name].trim()) {
         validationErrors[stuckField.name] = stuckField.error;
+      } else if (fieldLengthError) {
+        validationErrors[stuckField.name] = fieldLengthError;
       }
     }
     if (Object.keys(validationErrors).length > 0) {

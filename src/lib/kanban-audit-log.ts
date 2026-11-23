@@ -71,6 +71,7 @@ export function createAuditLogEntry(
   summary: string,
   note: string,
   mentionedNames: readonly string[],
+  parentActivityId?: string,
 ): KanbanAuditLogEntry {
   return Object.freeze({
     id: crypto.randomUUID(),
@@ -84,5 +85,6 @@ export function createAuditLogEntry(
     summary,
     note,
     mentionedNames: Object.freeze([...mentionedNames]),
+    parentActivityId,
   });
 }

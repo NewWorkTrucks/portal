@@ -9,14 +9,16 @@ import {
   useSensor,
   useSensors,
   type Announcements,
+  type CollisionDetection,
   type DragEndEvent,
   type DragOverEvent,
   type DragStartEvent,
+  type UniqueIdentifier,
 } from "@dnd-kit/core";
 import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { History, Lock, Plus } from "lucide-react";
 import Link from "next/link";
-import { Suspense, useId, useMemo, useState } from "react";
+import { Suspense, useCallback, useId, useMemo, useRef, useState } from "react";
 import { useDevicePreferences } from "@/components/device-preferences-provider";
 import { useKanbanBoard } from "@/components/kanban/kanban-board-provider";
 import { KanbanCardContent } from "@/components/kanban/kanban-card";
@@ -30,9 +32,11 @@ import KanbanCardActionsDialog from "@/components/kanban/kanban-card-actions-dia
 import KanbanTaskCreateDialog from "@/components/kanban/kanban-task-create-dialog";
 import KanbanTaskDetailsPanel from "@/components/kanban/kanban-task-details-panel";
 import KanbanTaskEditDialog from "@/components/kanban/kanban-task-edit-dialog";
+import KanbanTaskList from "@/components/kanban/kanban-task-list";
 import KanbanTaskRenameDialog from "@/components/kanban/kanban-task-rename-dialog";
 import { buttonVariants, Button } from "@/components/ui/button";
-import { KANBAN_COLUMNS } from "@/constants/kanban-columns";
+import { DEFAULT_KANBAN_BOARD_VIEW } from "@/constants/kanban-board-views";
+import { KANBAN_BOARD_NAME, KANBAN_COLUMN_COUNT, KANBAN_COLUMNS } from "@/constants/kanban-columns";
 import { EMPTY_KANBAN_TASK_FILTERS } from "@/constants/kanban-filters";
 import { KANBAN_ROLE_DEFINITIONS } from "@/constants/kanban-role-capabilities";
 import {
@@ -47,6 +51,7 @@ import type { KanbanAttachment } from "@/types/attachment";
 import type { KanbanTaskFilters } from "@/types/kanban-filters";
 import type { KanbanDailyUpdate, KanbanStageTransition } from "@/types/kanban-stages";
 import type {
+  KanbanBoardView,
   KanbanNoteOnlyOperation,
   KanbanPendingNoteOperation,
   KanbanStageOperation,
@@ -103,6 +108,7 @@ export default function KanbanBoard() {
     }),
   );
 
+  const [selectedView, setSelectedView] = useState<KanbanBoardView>(DEFAULT_KANBAN_BOARD_VIEW);
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
   const [tasksBeforeDrag, setTasksBeforeDrag] = useState<KanbanTasksByStatus | null>(null);
   const [blockedMoveNotice, setBlockedMoveNotice] = useState<string | null>(null);
@@ -120,6 +126,9 @@ export default function KanbanBoard() {
   // Kept after the note dialog closes, for the same exit-animation reason as dialogTask.
   const [pendingNoteOperation, setPendingNoteOperation] =
     useState<KanbanPendingNoteOperation | null>(null);
+  const lastDragOverIdRef = useRef<UniqueIdentifier | null>(null);
+  const isColumnMoveSettlingRef = useRef(false);
+  const columnMoveSettleFrameRef = useRef<number | null>(null);
 
   const activeTask = useMemo(
     () => (activeTaskId ? findTaskById(tasksByStatus, activeTaskId) : undefined),
@@ -143,17 +152,13 @@ export default function KanbanBoard() {
           KANBAN_COLUMNS.filter((column) => !(isDoneColumnHidden && column.status === "done")),
     [taskFilters.statuses, isDoneColumnHidden],
   );
+  const visibleListTasks = useMemo(
+    () => visibleColumns.flatMap((column) => visibleTasksByStatus[column.status]),
+    [visibleColumns, visibleTasksByStatus],
+  );
   const totalTaskCount = useMemo(
     () => Object.values(tasksByStatus).reduce((taskCount, tasks) => taskCount + tasks.length, 0),
     [tasksByStatus],
-  );
-  const visibleTaskCount = useMemo(
-    () =>
-      visibleColumns.reduce(
-        (taskCount, column) => taskCount + visibleTasksByStatus[column.status].length,
-        0,
-      ),
-    [visibleColumns, visibleTasksByStatus],
   );
 
   // The dragged card as it was when picked up, so permissions use its original column.
@@ -192,7 +197,34 @@ export default function KanbanBoard() {
     };
   }, [tasksByStatus]);
 
+  function handleSelectView(view: KanbanBoardView) {
+    setSelectedView(view);
+    setBlockedMoveNotice(null);
+  }
+
+  function cancelColumnMoveSettling() {
+    if (columnMoveSettleFrameRef.current !== null) {
+      cancelAnimationFrame(columnMoveSettleFrameRef.current);
+      columnMoveSettleFrameRef.current = null;
+    }
+    isColumnMoveSettlingRef.current = false;
+  }
+
+  /** Holds the drag target until the moved card has been laid out (two frames). */
+  function holdDragTargetUntilLayoutSettles() {
+    cancelColumnMoveSettling();
+    isColumnMoveSettlingRef.current = true;
+    columnMoveSettleFrameRef.current = requestAnimationFrame(() => {
+      columnMoveSettleFrameRef.current = requestAnimationFrame(() => {
+        columnMoveSettleFrameRef.current = null;
+        isColumnMoveSettlingRef.current = false;
+      });
+    });
+  }
+
   function resetDragState() {
+    cancelColumnMoveSettling();
+    lastDragOverIdRef.current = null;
     setActiveTaskId(null);
     setTasksBeforeDrag(null);
   }
@@ -232,6 +264,11 @@ export default function KanbanBoard() {
     if (dropBlockedReason) {
       setBlockedMoveNotice(dropBlockedReason);
       return;
+    }
+
+    const activeStatusBeforeMove = findStatusOfDraggable(tasksByStatus, activeId);
+    if (activeStatusBeforeMove && overStatusBeforeMove && activeStatusBeforeMove !== overStatusBeforeMove) {
+      holdDragTargetUntilLayoutSettles();
     }
 
     setTasksByStatus((previousTasksByStatus) => {
@@ -509,11 +546,22 @@ export default function KanbanBoard() {
   const noteOnlyOperation: KanbanNoteOnlyOperation | null =
     pendingNoteOperation && !stageOperation ? (pendingNoteOperation as KanbanNoteOnlyOperation) : null;
 
+  // Moving a card shifts the columns under the pointer. Keeping the same target until that
+  // settles stops the card bouncing between two columns in an endless update loop.
+  const detectDragCollisions = useCallback<CollisionDetection>((collisionArguments) => {
+    if (isColumnMoveSettlingRef.current && lastDragOverIdRef.current !== null) {
+      return [{ id: lastDragOverIdRef.current }];
+    }
+    const collisions = closestCorners(collisionArguments);
+    lastDragOverIdRef.current = collisions[0]?.id ?? null;
+    return collisions;
+  }, []);
+
   return (
     <DndContext
       id={dndContextId}
       sensors={sensors}
-      collisionDetection={closestCorners}
+      collisionDetection={detectDragCollisions}
       accessibility={{
         announcements: dragAnnouncements,
         screenReaderInstructions: SCREEN_READER_INSTRUCTIONS,
@@ -523,6 +571,25 @@ export default function KanbanBoard() {
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
     >
+      <header className="flex flex-wrap items-end justify-between gap-4 px-4 pt-6 pb-4 sm:px-6">
+        <div>
+          <h1 className="font-heading text-2xl font-semibold tracking-tight">{KANBAN_BOARD_NAME}</h1>
+          <p className="text-sm text-muted-foreground">
+            {KANBAN_COLUMN_COUNT} statuses.{" "}
+            {selectedView === "board" ? (
+              <>
+                <span className="pointer-coarse:hidden">
+                  Drag cards to change status or reorder. Right-click a card for more actions.
+                </span>
+                <span className="hidden pointer-coarse:inline">Hold a card to change its status or see more actions.</span>
+              </>
+            ) : (
+              "Open a row for details. Use its actions menu to change status."
+            )}
+          </p>
+        </div>
+      </header>
+
       <div className="flex flex-wrap items-center gap-2 px-4 pb-4 sm:px-6">
         <Button data-tour="new-task" onClick={() => openTaskDialog("create", null)}>
           <Plus aria-hidden />
@@ -551,23 +618,32 @@ export default function KanbanBoard() {
         filters={taskFilters}
         onChangeFilters={setTaskFilters}
         teamMembers={teamMembers}
-        visibleTaskCount={visibleTaskCount}
-        totalTaskCount={totalTaskCount}
+        selectedView={selectedView}
+        onSelectView={handleSelectView}
       />
 
-      <div data-tour="board-columns" className="flex min-h-0 flex-1 scroll-px-4 gap-4 overflow-x-auto px-4 pb-6 max-md:snap-x max-md:snap-proximity sm:px-6">
-        {visibleColumns.map((column) => (
-          <KanbanColumn
-            key={column.status}
-            column={column}
-            tasks={visibleTasksByStatus[column.status]}
-            totalTaskCount={tasksByStatus[column.status].length}
-            teamMembers={teamMembers}
-            taskActions={kanbanTaskActions}
-            dropBlockedReason={getDropBlockedReason(column.status)}
-          />
-        ))}
-      </div>
+      {selectedView === "board" ? (
+        <div data-tour="board-columns" className="flex min-h-0 flex-1 scroll-px-4 gap-4 overflow-x-auto px-4 pb-6 max-md:snap-x max-md:snap-proximity sm:px-6">
+          {visibleColumns.map((column) => (
+            <KanbanColumn
+              key={column.status}
+              column={column}
+              tasks={visibleTasksByStatus[column.status]}
+              totalTaskCount={tasksByStatus[column.status].length}
+              teamMembers={teamMembers}
+              taskActions={kanbanTaskActions}
+              dropBlockedReason={getDropBlockedReason(column.status)}
+            />
+          ))}
+        </div>
+      ) : (
+        <KanbanTaskList
+          tasks={visibleListTasks}
+          totalTaskCount={totalTaskCount}
+          teamMembers={teamMembers}
+          taskActions={kanbanTaskActions}
+        />
+      )}
 
       <DragOverlay>{activeTask ? <KanbanCardContent task={activeTask} isOverlay /> : null}</DragOverlay>
 

@@ -12,7 +12,7 @@ import {
 } from "@/constants/notification-preferences";
 import type { NotificationPreferences } from "@/types/notification-preferences";
 
-/** Which in-app notifications you receive (E3-3). Saved to your account, so it applies on every device. */
+/** Which in-app and email notifications you receive (E3-3). Saved to your account, so it applies on every device. */
 export default function NotificationSettingsSection() {
   const { dataMode } = useDataMode();
 
@@ -68,7 +68,7 @@ export default function NotificationSettingsSection() {
   return (
     <SettingsSection
       title="Notifications"
-      description="What shows up under the bell. Saved to your account, so it applies on every device. Email notifications are coming later."
+      description="What reaches you under the bell and by email. Saved to your account, so it applies on every device."
     >
       {NOTIFICATION_PREFERENCE_OPTIONS.map((preferenceOption) => {
         const controlId = `settings-notify-${preferenceOption.preferenceName}`;

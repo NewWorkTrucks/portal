@@ -8,6 +8,7 @@ import {
   notifyMentionedUsers,
   postKanbanDailyUpdate,
   postKanbanTaskUpdate,
+  postKanbanUpdateComment,
   removeKanbanAttachment,
   renameKanbanTask,
   transitionKanbanTask,
@@ -128,6 +129,7 @@ export function KanbanBoardProvider({ initialTasks, children }: KanbanBoardProvi
     summary: string,
     note: string,
     autoMentionHandles: string[] = [],
+    parentActivityId?: string,
   ) {
     const mentionedNames = resolveMentionedNames(
       [note, ...autoMentionHandles.map((handle) => `@${handle}`)].join(" "),
@@ -145,6 +147,7 @@ export function KanbanBoardProvider({ initialTasks, children }: KanbanBoardProvi
       summary,
       note,
       mentionedNames,
+      parentActivityId,
     );
     setAuditLogEntries((previousEntries) => [auditLogEntry, ...previousEntries]);
 
@@ -376,6 +379,17 @@ export function KanbanBoardProvider({ initialTasks, children }: KanbanBoardProvi
     await addUpdateFiles(task, files, activityId, note);
   }
 
+  async function addUpdateComment(task: KanbanTask, parentActivityId: string, note: string) {
+    assertTaskInCurrentBusiness(task);
+    assertKanbanPermission(
+      getTaskPermissions(task).canAddUpdate,
+      "You don't have permission to comment on this card.",
+    );
+
+    await postKanbanUpdateComment(parentActivityId, note);
+    await recordAuditLogEntry(task, "comment", "Commented on an update", note, [], parentActivityId);
+  }
+
   async function attachFiles(task: KanbanTask, files: File[], note: string) {
     assertTaskInCurrentBusiness(task);
     assertKanbanPermission(
@@ -452,6 +466,7 @@ export function KanbanBoardProvider({ initialTasks, children }: KanbanBoardProvi
         reorderTask: async () => undefined,
         postDailyUpdate,
         addTaskUpdate,
+        addUpdateComment,
         attachFiles,
         removeAttachment,
         getTaskPermissions,

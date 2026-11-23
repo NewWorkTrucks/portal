@@ -6,47 +6,26 @@ import { CSS } from "@dnd-kit/utilities";
 import { motion, type TargetAndTransition, type Transition } from "framer-motion";
 import {
   ClockAlert,
-  Archive,
   CalendarClock,
-  CircleCheck,
-  ClipboardCheck,
-  CornerUpLeft,
   Eye,
   Paperclip,
   Repeat,
-  Lock,
   CalendarDays,
-  MessageSquarePlus,
   MessageSquareText,
   Timer,
-  Pencil,
-  TextCursorInput,
-  UserRoundPen,
 } from "lucide-react";
-import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuGroup,
-  ContextMenuItem,
-  ContextMenuLabel,
-  ContextMenuRadioGroup,
-  ContextMenuRadioItem,
-  ContextMenuSeparator,
-  ContextMenuSub,
-  ContextMenuSubContent,
-  ContextMenuSubTrigger,
-  ContextMenuTrigger,
-} from "@/components/ui/context-menu";
+import { ContextMenu, ContextMenuTrigger } from "@/components/ui/context-menu";
 import { useCurrentUser } from "@/components/current-user-provider";
 import { useDevicePreferences } from "@/components/device-preferences-provider";
 import { useKanbanBoard } from "@/components/kanban/kanban-board-provider";
+import KanbanTaskContextMenuContent from "@/components/kanban/kanban-task-context-menu-content";
 import MentionText from "@/components/mention-text";
 import { toPlainNoteText } from "@/lib/rich-note";
 import UserAvatar from "@/components/user-avatar";
-import { KANBAN_ROLE_DEFINITIONS } from "@/constants/kanban-role-capabilities";
+import { KANBAN_PRIORITY_BADGE_CLASS_NAMES } from "@/constants/kanban-task-priorities";
 import { cn } from "@/lib/utils";
 import { formatEstimatedTurnaround, formatKanbanDate } from "@/lib/kanban";
-import type { KanbanTask, KanbanTaskActions, KanbanTaskPriority } from "@/types/kanban";
+import type { KanbanTask, KanbanTaskActions } from "@/types/kanban";
 import type { TeamMember } from "@/types/team";
 
 // A pointer that moves further than this between press and release was a drag, not a click.
@@ -55,12 +34,6 @@ const CLICK_MOVEMENT_TOLERANCE_PX = 5;
 const LONG_PRESS_DELAY_MS = 450;
 // How long after the finger lifts a stray click can still arrive and must not dismiss the dialog.
 const RELEASE_CLICK_WINDOW_MS = 350;
-
-const PRIORITY_BADGE_CLASS_NAMES: Record<KanbanTaskPriority, string> = {
-  low: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",
-  medium: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300",
-  high: "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300",
-};
 
 type KanbanCardProps = {
   task: KanbanTask;
@@ -104,7 +77,7 @@ export function KanbanCardContent({ task, isOverlay = false }: KanbanCardContent
         <span
           className={cn(
             "shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold tracking-wide uppercase",
-            PRIORITY_BADGE_CLASS_NAMES[task.priority],
+            KANBAN_PRIORITY_BADGE_CLASS_NAMES[task.priority],
           )}
         >
           {task.priority}
@@ -196,13 +169,7 @@ export function KanbanCardContent({ task, isOverlay = false }: KanbanCardContent
 
 export default function KanbanCard({ task, teamMembers, taskActions }: KanbanCardProps) {
   const { getTaskPermissions } = useKanbanBoard();
-  const { currentUser } = useCurrentUser();
   const taskPermissions = getTaskPermissions(task);
-  const isAnyActionLimited =
-    !taskPermissions.canChangeOwner ||
-    !taskPermissions.canEdit ||
-    !taskPermissions.canRename ||
-    !taskPermissions.canArchive;
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: task.id,
     disabled: !taskPermissions.canMove,
@@ -352,116 +319,7 @@ export default function KanbanCard({ task, teamMembers, taskActions }: KanbanCar
         <KanbanCardContent task={task} />
       </ContextMenuTrigger>
 
-      <ContextMenuContent className="w-56">
-        <ContextMenuGroup>
-          <ContextMenuLabel className="flex items-center gap-2 text-foreground">
-            <UserAvatar name={task.ownerName} size="default" />
-            <span className="flex min-w-0 flex-col">
-              <span className="truncate text-sm font-medium">{task.ownerName}</span>
-              <span className="text-xs text-muted-foreground">Owner</span>
-            </span>
-          </ContextMenuLabel>
-          <ContextMenuSub>
-            <ContextMenuSubTrigger disabled={!taskPermissions.canChangeOwner}>
-              <UserRoundPen aria-hidden />
-              Change ownership
-            </ContextMenuSubTrigger>
-            <ContextMenuSubContent className="w-48">
-              <ContextMenuRadioGroup
-                value={task.ownerName}
-                onValueChange={(ownerName: string) => taskActions.onSelectOwner(task, ownerName)}
-              >
-                {teamMembers.map((teamMember) => (
-                  <ContextMenuRadioItem key={teamMember.id} value={teamMember.name}>
-                    <UserAvatar name={teamMember.name} className="size-5" />
-                    {teamMember.name}
-                  </ContextMenuRadioItem>
-                ))}
-              </ContextMenuRadioGroup>
-            </ContextMenuSubContent>
-          </ContextMenuSub>
-        </ContextMenuGroup>
-
-        <ContextMenuSeparator />
-
-        <ContextMenuGroup>
-          <ContextMenuItem
-            disabled={!taskPermissions.canEdit}
-            onClick={() => taskActions.onClickEdit(task)}
-          >
-            <Pencil aria-hidden />
-            Edit
-          </ContextMenuItem>
-          <ContextMenuItem
-            disabled={!taskPermissions.canRename}
-            onClick={() => taskActions.onClickRename(task)}
-          >
-            <TextCursorInput aria-hidden />
-            Rename
-          </ContextMenuItem>
-        </ContextMenuGroup>
-
-        <ContextMenuSeparator />
-        <ContextMenuGroup>
-          <ContextMenuItem
-            disabled={!taskPermissions.canAddUpdate}
-            onClick={() => taskActions.onClickAddUpdate(task)}
-          >
-            <MessageSquarePlus aria-hidden />
-            Add update
-          </ContextMenuItem>
-          {task.status === "working-on-it" && (
-            <ContextMenuItem
-              disabled={!taskPermissions.canPostDailyUpdate}
-              onClick={() => taskActions.onClickDailyUpdate(task)}
-            >
-              <ClipboardCheck aria-hidden />
-              Post daily update
-            </ContextMenuItem>
-          )}
-          {task.status === "needs-review" && (
-            <>
-              <ContextMenuItem
-                disabled={!taskPermissions.canReview}
-                onClick={() => taskActions.onClickApprove(task)}
-              >
-                <CircleCheck aria-hidden />
-                Approve
-              </ContextMenuItem>
-              <ContextMenuItem
-                disabled={!taskPermissions.canReview}
-                onClick={() => taskActions.onClickReturn(task)}
-              >
-                <CornerUpLeft aria-hidden />
-                Return for revisions
-              </ContextMenuItem>
-            </>
-          )}
-        </ContextMenuGroup>
-
-        <ContextMenuSeparator />
-
-        <ContextMenuItem
-          variant="destructive"
-          disabled={!taskPermissions.canArchive}
-          onClick={() => taskActions.onClickArchive(task)}
-        >
-          <Archive aria-hidden />
-          Archive
-        </ContextMenuItem>
-
-        {isAnyActionLimited && (
-          <>
-            <ContextMenuSeparator />
-            <ContextMenuGroup>
-              <ContextMenuLabel className="flex items-start gap-1.5">
-                <Lock aria-hidden className="mt-0.5 size-3 shrink-0" />
-                Some actions are limited for your role ({KANBAN_ROLE_DEFINITIONS[currentUser.role].label}).
-              </ContextMenuLabel>
-            </ContextMenuGroup>
-          </>
-        )}
-      </ContextMenuContent>
+      <KanbanTaskContextMenuContent task={task} teamMembers={teamMembers} taskActions={taskActions} />
     </ContextMenu>
   );
 }

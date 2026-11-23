@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import MentionTextarea from "@/components/mention-textarea";
+import { getNoteLengthError } from "@/lib/rich-note";
 import type { Mentionable } from "@/types/mention";
 
 type KanbanTaskRenameFormProps = {
@@ -38,10 +39,13 @@ export default function KanbanTaskRenameForm({
     if (!trimmedTaskTitle) {
       setTitleError("Title is required.");
     }
+    const noteLengthError = getNoteLengthError(trimmedNote);
     if (!trimmedNote) {
       setNoteError("A note is required.");
+    } else if (noteLengthError) {
+      setNoteError(noteLengthError);
     }
-    if (!trimmedTaskTitle || !trimmedNote) {
+    if (!trimmedTaskTitle || !trimmedNote || noteLengthError) {
       return;
     }
 
