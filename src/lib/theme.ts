@@ -1,4 +1,9 @@
 import {
+  LOW_SPEC_MODE_ATTRIBUTE,
+  LOW_SPEC_MODE_STORAGE_KEY,
+  REDUCED_MOTION_QUERY,
+} from "@/constants/device-preferences";
+import {
   ACCENT_COLOR_OPTIONS,
   ACCENT_COLOR_STORAGE_KEY,
   DEFAULT_ACCENT_COLOR,
@@ -50,12 +55,12 @@ export function applyThemeToDocument(themeMode: ThemeMode, accentColor: AccentCo
 }
 
 /**
- * Runs in <head> while the HTML is parsed, before first paint, so a saved dark theme never flashes light.
- * It mirrors applyThemeToDocument with the same storage keys and defaults.
+ * Runs in <head> while the HTML is parsed, before first paint, so a saved theme or low spec mode never
+ * flashes the wrong design. It mirrors applyThemeToDocument and the device preferences' storage keys and defaults.
  */
 export function buildThemeInitScript(): string {
   const themeModes = JSON.stringify(THEME_MODE_OPTIONS.map((option) => option.value));
   const accentColors = JSON.stringify(ACCENT_COLOR_OPTIONS.map((option) => option.value));
 
-  return `(function(){try{var s=window.localStorage,m=s.getItem(${JSON.stringify(THEME_MODE_STORAGE_KEY)}),a=s.getItem(${JSON.stringify(ACCENT_COLOR_STORAGE_KEY)});if(${themeModes}.indexOf(m)<0)m=${JSON.stringify(DEFAULT_THEME_MODE)};if(${accentColors}.indexOf(a)<0)a=${JSON.stringify(DEFAULT_ACCENT_COLOR)};var d=m==="dark"||(m==="system"&&window.matchMedia(${JSON.stringify(DARK_COLOR_SCHEME_QUERY)}).matches),r=document.documentElement;r.classList.toggle("dark",d);r.dataset.accent=a;r.style.colorScheme=d?"dark":"light"}catch(e){}})()`;
+  return `(function(){try{var s=window.localStorage,m=s.getItem(${JSON.stringify(THEME_MODE_STORAGE_KEY)}),a=s.getItem(${JSON.stringify(ACCENT_COLOR_STORAGE_KEY)});if(${themeModes}.indexOf(m)<0)m=${JSON.stringify(DEFAULT_THEME_MODE)};if(${accentColors}.indexOf(a)<0)a=${JSON.stringify(DEFAULT_ACCENT_COLOR)};var d=m==="dark"||(m==="system"&&window.matchMedia(${JSON.stringify(DARK_COLOR_SCHEME_QUERY)}).matches),r=document.documentElement;r.classList.toggle("dark",d);r.dataset.accent=a;r.style.colorScheme=d?"dark":"light";var l=s.getItem(${JSON.stringify(LOW_SPEC_MODE_STORAGE_KEY)});r.toggleAttribute(${JSON.stringify(LOW_SPEC_MODE_ATTRIBUTE)},l===null?window.matchMedia(${JSON.stringify(REDUCED_MOTION_QUERY)}).matches:l==="true")}catch(e){}})()`;
 }

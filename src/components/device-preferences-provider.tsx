@@ -24,6 +24,10 @@ function readStoredBoolean(storageKey: string, fallback: boolean): boolean {
   return storedValue === null ? fallback : storedValue === "true";
 }
 
+function applyLowSpecMode(isLowSpecModeOn: boolean) {
+  document.documentElement.toggleAttribute(LOW_SPEC_MODE_ATTRIBUTE, isLowSpecModeOn);
+}
+
 type DevicePreferencesProviderProps = {
   children: ReactNode;
 };
@@ -44,6 +48,7 @@ export function DevicePreferencesProvider({ children }: DevicePreferencesProvide
 
   function setLowSpecMode(isLowSpecModeOn: boolean) {
     updateDevicePreference("isLowSpecModeOn", isLowSpecModeOn, LOW_SPEC_MODE_STORAGE_KEY);
+    applyLowSpecMode(isLowSpecModeOn);
   }
 
   function setDoneColumnHidden(isDoneColumnHidden: boolean) {
@@ -57,20 +62,18 @@ export function DevicePreferencesProvider({ children }: DevicePreferencesProvide
   useEffect(() => {
     // One-time read of browser-only storage. Low spec mode starts on when the system asks for
     // reduced motion, until the person picks for themselves.
+    const isStoredLowSpecModeOn = readStoredBoolean(
+      LOW_SPEC_MODE_STORAGE_KEY,
+      window.matchMedia(REDUCED_MOTION_QUERY).matches,
+    );
+    applyLowSpecMode(isStoredLowSpecModeOn);
     // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time read of browser-only storage
     setDevicePreferences({
-      isLowSpecModeOn: readStoredBoolean(
-        LOW_SPEC_MODE_STORAGE_KEY,
-        window.matchMedia(REDUCED_MOTION_QUERY).matches,
-      ),
+      isLowSpecModeOn: isStoredLowSpecModeOn,
       isDoneColumnHidden: readStoredBoolean(DONE_COLUMN_HIDDEN_STORAGE_KEY, false),
       defaultBusinessId: readStoredValue(DEFAULT_BUSINESS_STORAGE_KEY) || null,
     });
   }, []);
-
-  useEffect(() => {
-    document.documentElement.toggleAttribute(LOW_SPEC_MODE_ATTRIBUTE, devicePreferences.isLowSpecModeOn);
-  }, [devicePreferences.isLowSpecModeOn]);
 
   return (
     <DevicePreferencesContext.Provider

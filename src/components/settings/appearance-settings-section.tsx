@@ -62,7 +62,7 @@ export default function AppearanceSettingsSection() {
       <SettingsRow
         controlId="settings-low-spec-mode"
         label="Low spec mode"
-        description="Turns off animations, card hover effects, transitions and blur. Use it on slower computers. Starts on if your system asks for reduced motion."
+        description="Switches to the classic design, with no glass, blur, animations or card hover effects. Use it on slower computers. Starts on if your system asks for reduced motion."
       >
         <Switch
           id="settings-low-spec-mode"

@@ -24,7 +24,7 @@ export default function AppHeader() {
   return (
     <header
       className={cn(
-        "flex h-14 shrink-0 items-center justify-between gap-4 border-b px-4 sm:px-6",
+        "glass-panel relative z-10 flex h-14 shrink-0 items-center justify-between gap-4 border-b px-4 sm:px-6",
         isSimulatingUser && "border-amber-300 bg-amber-50 dark:border-amber-500/40 dark:bg-amber-500/10",
       )}
     >

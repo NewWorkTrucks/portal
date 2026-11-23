@@ -73,6 +73,9 @@
   --chart-4: oklch(0.508 0.118 165.612);
   --chart-5: oklch(0.432 0.095 166.913);
   --radius: 0.625rem;
+  /* Every single-line control (buttons, menu buttons, selects, inputs) shares one radius. */
+  --control-radius: 0px;
+  --field-radius: 0px;
   --sidebar: oklch(0.987 0.002 197.1);
   --sidebar-foreground: oklch(0.148 0.004 228.8);
   --sidebar-primary: oklch(0.596 0.145 163.225);
@@ -300,7 +303,122 @@
   border-color: transparent transparent var(--popover) transparent;
 }
 
-/* Low spec mode (Settings → Appearance): no animations, transitions or blur, for slower devices. */
+/*
+ * Glass is the main design, in light and dark. Everything is scoped to "not low spec", so low
+ * spec mode is the classic design above, untouched. Only large panels and overlays blur: blur is
+ * the expensive part, so cards stay plain translucent surfaces inside their blurred column.
+ * Primary and chart colors are not set here: glass uses the same accent colors as everything else.
+ */
+:root:not([data-low-spec]) {
+  background:
+    radial-gradient(80% 70% at 12% 108%, #f4c49a 0%, transparent 68%),
+    radial-gradient(55% 50% at 96% -6%, color-mix(in oklch, var(--primary) 28%, transparent) 0%, transparent 70%),
+    #f1ece4;
+  background-attachment: fixed;
+
+  --background: rgb(255 255 255 / 55%);
+  --foreground: #241d17;
+  --card: rgb(255 255 255 / 62%);
+  --card-foreground: #241d17;
+  --popover: rgb(255 255 255 / 84%);
+  --popover-foreground: #241d17;
+  --secondary: rgb(60 45 30 / 8%);
+  --secondary-foreground: #241d17;
+  --muted: rgb(60 45 30 / 6%);
+  --muted-foreground: #62584f;
+  --accent: rgb(60 45 30 / 10%);
+  --accent-foreground: #241d17;
+  --destructive: #c5281c;
+  --border: rgb(60 45 30 / 15%);
+  --input: rgb(60 45 30 / 22%);
+  --ring: var(--primary);
+  --radius: 0.875rem;
+  --control-radius: 9999px;
+  --field-radius: var(--radius-md);
+  --sidebar: rgb(255 255 255 / 50%);
+  --sidebar-foreground: #241d17;
+  --sidebar-accent: rgb(60 45 30 / 10%);
+  --sidebar-accent-foreground: #241d17;
+  --sidebar-border: rgb(60 45 30 / 15%);
+  --sidebar-ring: var(--primary);
+  --glass-highlight: inset 0 1px 0 rgb(255 255 255 / 70%);
+  --glass-shadow: 0 18px 48px rgb(70 50 30 / 18%);
+  --glass-scrim: rgb(60 45 30 / 22%);
+}
+
+:root.dark:not([data-low-spec]) {
+  background:
+    radial-gradient(80% 70% at 12% 108%, #7a4623 0%, transparent 68%),
+    radial-gradient(55% 50% at 96% -6%, color-mix(in oklch, var(--primary) 50%, transparent) 0%, transparent 70%),
+    #130f0c;
+  background-attachment: fixed;
+
+  --background: rgb(16 12 9 / 55%);
+  --foreground: #f5f1ea;
+  --card: rgb(255 255 255 / 7%);
+  --card-foreground: #f5f1ea;
+  --popover: rgb(35 29 24 / 80%);
+  --popover-foreground: #f5f1ea;
+  --secondary: rgb(255 255 255 / 10%);
+  --secondary-foreground: #f5f1ea;
+  --muted: rgb(255 255 255 / 8%);
+  --muted-foreground: #b9b1a8;
+  --accent: rgb(255 255 255 / 12%);
+  --accent-foreground: #f5f1ea;
+  --destructive: #ff8a7a;
+  --border: rgb(255 255 255 / 12%);
+  --input: rgb(255 255 255 / 16%);
+  --ring: var(--primary);
+  --sidebar: rgb(255 255 255 / 6%);
+  --sidebar-foreground: #f5f1ea;
+  --sidebar-accent: rgb(255 255 255 / 12%);
+  --sidebar-accent-foreground: #f5f1ea;
+  --sidebar-border: rgb(255 255 255 / 12%);
+  --sidebar-ring: var(--primary);
+  --glass-highlight: inset 0 1px 0 rgb(255 255 255 / 8%);
+  --glass-shadow: 0 18px 48px rgb(0 0 0 / 45%);
+  --glass-scrim: rgb(10 7 5 / 45%);
+}
+
+:root:not([data-low-spec]) body {
+  background: transparent;
+}
+
+:root:not([data-low-spec]) .glass-panel {
+  backdrop-filter: blur(18px) saturate(140%);
+  box-shadow: var(--glass-highlight);
+}
+
+:root:not([data-low-spec]) :is(
+  [data-slot="dialog-content"],
+  [data-slot="alert-dialog-content"],
+  [data-slot="sheet-content"],
+  [data-slot="dropdown-menu-content"],
+  [data-slot="dropdown-menu-sub-content"],
+  [data-slot="context-menu-content"],
+  [data-slot="context-menu-sub-content"],
+  [data-slot="select-content"],
+  .ffl-tour-popover.driver-popover
+) {
+  backdrop-filter: blur(24px) saturate(150%);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--glass-highlight), var(--glass-shadow);
+}
+
+/* The side panel sits flush with the screen edge, so it keeps square corners. */
+:root:not([data-low-spec]) [data-slot="sheet-content"] {
+  border-radius: 0;
+}
+
+:root:not([data-low-spec]) :is([data-slot="dialog-overlay"], [data-slot="alert-dialog-overlay"], [data-slot="sheet-overlay"]) {
+  background-color: var(--glass-scrim);
+}
+
+:root:not([data-low-spec]) .ffl-tour-popover .driver-popover-footer button {
+  border-radius: var(--control-radius);
+}
+
+/* Low spec mode (Settings → Appearance): the classic design, with no animations, transitions or blur. */
 :root[data-low-spec] *,
 :root[data-low-spec] *::before,
 :root[data-low-spec] *::after {
