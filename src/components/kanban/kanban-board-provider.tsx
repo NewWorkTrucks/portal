@@ -354,6 +354,7 @@ export function KanbanBoardProvider({ initialTasks, children }: KanbanBoardProvi
       updateTaskById(previousTasksByStatus, task.id, {
         latestNote: dailyUpdateNote,
         lastDailyUpdateAt: new Date().toISOString(),
+        dailyUpdateMissedOn: undefined,
       }),
     );
     const activityId = await recordAuditLogEntry(task, "daily-update", "Daily update", dailyUpdateNote);

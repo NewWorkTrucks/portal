@@ -39,6 +39,7 @@ export type KanbanTaskRow = {
   position: number;
   deferral_count: number;
   last_daily_update_at: string | null;
+  daily_update_missed_on: string | null;
   reviewer_id: string | null;
   waiting_on_what: string | null;
   waiting_on_who: string | null;

@@ -56,6 +56,7 @@ export const MOCK_KANBAN_TASKS: KanbanTask[] = [
     latestNote: "Captured Morgan's direct reports. Still need Jordan and Drew's teams.",
     attachments: [],
     deferralCount: 0,
+    dailyUpdateMissedOn: "2026-11-20",
   },
   {
     id: "task-5",

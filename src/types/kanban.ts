@@ -59,6 +59,8 @@ export type KanbanTask = {
   deferralCount: number;
   /** When the last daily update was posted (E2-3). Used for staleness checks later (E3-4). */
   lastDailyUpdateAt?: string;
+  /** The workday this card missed its 6 PM Central update; cleared by the next update. */
+  dailyUpdateMissedOn?: string;
   /** Needs Review: who was asked to review (E2-4). */
   reviewerName?: string;
   /** Waiting: what, who and when contacted (E2-6). */

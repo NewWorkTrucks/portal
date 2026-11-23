@@ -5,6 +5,7 @@ import { type KeyboardEvent, type MouseEvent, type PointerEvent, useRef } from "
 import { CSS } from "@dnd-kit/utilities";
 import { motion, type TargetAndTransition, type Transition } from "framer-motion";
 import {
+  ClockAlert,
   Archive,
   CalendarClock,
   CircleCheck,
@@ -107,6 +108,16 @@ export function KanbanCardContent({ task, isOverlay = false }: KanbanCardContent
       </header>
 
       <p className="line-clamp-2 text-xs text-muted-foreground">{task.description}</p>
+
+      {task.status === "working-on-it" && task.dailyUpdateMissedOn && (
+        <p
+          title="No daily update by 6:00 PM Central. Post a daily update to clear this."
+          className="flex w-fit items-center gap-1 rounded-md bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-900 dark:bg-amber-500/15 dark:text-amber-300"
+        >
+          <ClockAlert aria-hidden className="size-3" />
+          Update missed
+        </p>
+      )}
 
       {task.latestNote && (
         <p className="flex gap-1.5 rounded-md bg-muted px-2 py-1.5 text-xs text-muted-foreground">
