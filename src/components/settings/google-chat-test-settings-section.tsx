@@ -1,6 +1,6 @@
 "use client";
 
-import { ListChecks, Send } from "lucide-react";
+import { ListChecks, Newspaper, Send } from "lucide-react";
 import { useState } from "react";
 import { sendGoogleChatTest } from "@/api/google-chat-test";
 import { useCurrentUser } from "@/components/current-user-provider";
@@ -18,7 +18,9 @@ function describeTestResult(businessName: string, testKind: GoogleChatTestKind, 
     return `Test message sent to ${businessName}'s space. If it doesn't arrive, check the webhook URL.`;
   }
   if (testResult.cardCount === 0) {
-    return `Preview sent to ${businessName}'s space: every Working on It card is up to date.`;
+    return testKind === "digest"
+      ? `Preview sent to ${businessName}'s space: no stuck, missed or overdue cards.`
+      : `Preview sent to ${businessName}'s space: every Working on It card is up to date.`;
   }
   return `Preview sent to ${businessName}'s space with ${testResult.cardCount} ${testResult.cardCount === 1 ? "card" : "cards"}.`;
 }
@@ -86,6 +88,22 @@ export default function GoogleChatTestSettingsSection() {
         >
           <ListChecks aria-hidden />
           {runningTestKind === "summary" ? "Sending…" : "Send preview"}
+        </Button>
+      </SettingsRow>
+
+      <SettingsRow
+        controlId="settings-chat-test-digest"
+        label="Morning digest"
+        description="Posts a preview of today's stuck, missed and overdue cards."
+      >
+        <Button
+          id="settings-chat-test-digest"
+          variant="outline"
+          disabled={areTestsDisabled}
+          onClick={() => handleClickRunTest("digest")}
+        >
+          <Newspaper aria-hidden />
+          {runningTestKind === "digest" ? "Sending…" : "Send preview"}
         </Button>
       </SettingsRow>
 

@@ -3,7 +3,7 @@ import {
   KANBAN_ESCALATION_MENTION_HANDLE,
 } from "@/constants/kanban-stages";
 import { formatEstimatedTurnaround, formatKanbanDate } from "@/lib/kanban";
-import type { KanbanStatus, KanbanTask } from "@/types/kanban";
+import type { KanbanTask } from "@/types/kanban";
 import type { KanbanDailyUpdate, KanbanStageTransition } from "@/types/kanban-stages";
 
 /**
@@ -115,17 +115,13 @@ export function getStageTaskChanges(
 }
 
 /** Mention handles a transition notifies automatically, on top of any @mentions in the note. */
-export function getStageAutoMentionHandles(
-  transition: KanbanStageTransition,
-  previousStatus: KanbanStatus,
-): string[] {
+export function getStageAutoMentionHandles(transition: KanbanStageTransition): string[] {
   switch (transition.status) {
     case "needs-review":
       return [transition.reviewerName.replace(/\s+/g, "")];
     case "stuck":
-      return [KANBAN_ESCALATION_MENTION_HANDLE];
     case "deferred":
-      return previousStatus === "not-started" ? [KANBAN_ESCALATION_MENTION_HANDLE] : [];
+      return [KANBAN_ESCALATION_MENTION_HANDLE];
     default:
       return [];
   }

@@ -335,7 +335,7 @@ export function KanbanBoardProvider({ initialTasks, children }: KanbanBoardProvi
       "moved",
       `${getColumnTitle(previousStatus)} → ${getColumnTitle(newStatus)}`,
       stageTaskChanges.latestNote ?? "",
-      getStageAutoMentionHandles(transition, previousStatus),
+      getStageAutoMentionHandles(transition),
     );
     await addUpdateFiles(task, files, activityId, stageTaskChanges.latestNote ?? "");
   }

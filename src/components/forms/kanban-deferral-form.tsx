@@ -16,7 +16,7 @@ import type { Mentionable } from "@/types/mention";
 type KanbanDeferralFormProps = {
   /** The card's current turnaround, or null if it was never set. */
   initialTurnaround: KanbanEstimatedTurnaround | null;
-  /** E2-2: deferring a card that hasn't started also notifies Leadership. */
+  /** E2-2: a card that hasn't started is asked why it can't start. */
   isCantStartDeferral: boolean;
   previousDeferralCount: number;
   mentionables: Mentionable[];
@@ -145,12 +145,10 @@ export default function KanbanDeferralForm({
         </FieldDescription>
       </FieldGroup>
 
-      {isCantStartDeferral && (
-        <p className="flex items-start gap-2 rounded-md bg-amber-100 px-3 py-2 text-xs text-amber-900 dark:bg-amber-400/15 dark:text-amber-100">
-          <BellRing aria-hidden className="mt-0.5 size-3.5 shrink-0" />
-          Deferring a card that hasn&rsquo;t started notifies @Leadership.
-        </p>
-      )}
+      <p className="flex items-start gap-2 rounded-md bg-amber-100 px-3 py-2 text-xs text-amber-900 dark:bg-amber-400/15 dark:text-amber-100">
+        <BellRing aria-hidden className="mt-0.5 size-3.5 shrink-0" />
+        Deferring a card notifies @Leadership.
+      </p>
 
       {canAttachFiles && (
         <Field>
