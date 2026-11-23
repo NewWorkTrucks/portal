@@ -7,6 +7,10 @@ export type ActivityReceipt = {
   seenAt: string | null;
 };
 
+export type ActivityReceiptListProps = {
+  receipts: readonly ActivityReceipt[];
+};
+
 export type ActivityReceiptRow = {
   activity_id: string;
   recipient_id: string;
