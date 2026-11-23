@@ -24,6 +24,7 @@ import AttachmentPicker from "@/components/attachment-picker";
 import { useCurrentUser } from "@/components/current-user-provider";
 import { useKanbanBoard } from "@/components/kanban/kanban-board-provider";
 import KanbanActivityFiles from "@/components/kanban/kanban-activity-files";
+import KanbanActivityReceipt from "@/components/kanban/kanban-activity-receipt";
 import RichNoteText from "@/components/rich-note-text";
 import { Button } from "@/components/ui/button";
 import {
@@ -45,6 +46,7 @@ import {
 import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import UserAvatar from "@/components/user-avatar";
 import { useIsPhoneViewport } from "@/hooks/use-is-phone-viewport";
+import { useTaskReceipts } from "@/hooks/use-task-receipts";
 import { MAX_ATTACHMENT_SIZE_BYTES } from "@/constants/attachments";
 import { AUDIT_LOG_ACTION_DISPLAY } from "@/constants/audit-log-actions";
 import { KANBAN_COLUMNS } from "@/constants/kanban-columns";
@@ -112,6 +114,11 @@ export default function KanbanTaskDetailsPanel({
     [taskAuditLogEntries, visibleActivityCount],
   );
   const hiddenActivityCount = taskAuditLogEntries.length - visibleTaskAuditLogEntries.length;
+  const { receiptsByActivityId, unseenActivityIds, markSeen } = useTaskReceipts(
+    task?.id ?? null,
+    isOpen,
+    taskAuditLogEntries,
+  );
 
   function handleClickShowMoreActivity() {
     if (task) {
@@ -435,6 +442,12 @@ export default function KanbanTaskDetailsPanel({
                         {auditLogEntry.simulatedByName &&
                           ` · via ${auditLogEntry.simulatedByName} (viewing as)`}
                       </time>
+                      <KanbanActivityReceipt
+                        activityId={auditLogEntry.id}
+                        receipts={receiptsByActivityId.get(auditLogEntry.id) ?? []}
+                        isUnseenByViewer={unseenActivityIds.has(auditLogEntry.id)}
+                        onSeen={markSeen}
+                      />
                     </li>
                   );
                 })}
