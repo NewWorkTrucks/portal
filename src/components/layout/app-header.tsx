@@ -24,7 +24,7 @@ export default function AppHeader() {
   return (
     <header
       className={cn(
-        "glass-panel relative z-10 flex h-14 shrink-0 items-center justify-between gap-4 border-b px-4 sm:px-6",
+        "glass-panel relative z-10 flex h-14 shrink-0 items-center justify-between gap-2 border-b px-3 sm:gap-4 sm:px-6",
         isSimulatingUser && "border-amber-300 bg-amber-50 dark:border-amber-500/40 dark:bg-amber-500/10",
       )}
     >
@@ -37,7 +37,7 @@ export default function AppHeader() {
         <span className="hidden sm:inline">FFL Operations Portal</span>
       </Link>
 
-      <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+      <div className="flex min-w-0 items-center gap-1 sm:gap-3">
         {/* Build-time constant, so production never shows the development menus. */}
         {IS_USER_SIMULATION_ENABLED && <DataModeMenu />}
         <span data-tour="business" className="flex">

@@ -9,7 +9,7 @@ export default function UserProfile() {
   const { currentUser, signedInUser, isSimulatingUser } = useCurrentUser();
 
   return (
-    <div data-tour="profile" className="flex min-w-0 items-center gap-2">
+    <div data-tour="profile" className="flex min-w-0 shrink-0 items-center gap-2 sm:shrink">
       <UserAvatar name={currentUser.name} size="default" />
       {isSimulatingUser && (
         <Badge className="bg-amber-200 text-amber-950 sm:hidden dark:bg-amber-400/30 dark:text-amber-100">

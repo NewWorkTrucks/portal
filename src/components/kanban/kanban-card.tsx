@@ -1,7 +1,7 @@
 "use client";
 
 import { useSortable } from "@dnd-kit/sortable";
-import { type KeyboardEvent, type MouseEvent, type PointerEvent, useRef } from "react";
+import { type KeyboardEvent, type MouseEvent, type PointerEvent, useEffect, useRef } from "react";
 import { CSS } from "@dnd-kit/utilities";
 import { motion, type TargetAndTransition, type Transition } from "framer-motion";
 import {
@@ -51,6 +51,10 @@ import type { TeamMember } from "@/types/team";
 
 // A pointer that moves further than this between press and release was a drag, not a click.
 const CLICK_MOVEMENT_TOLERANCE_PX = 5;
+// Holding a finger on a card this long opens its actions. Moving further than the tolerance scrolls instead.
+const LONG_PRESS_DELAY_MS = 450;
+// How long after the finger lifts a stray click can still arrive and must not dismiss the dialog.
+const RELEASE_CLICK_WINDOW_MS = 350;
 
 const PRIORITY_BADGE_CLASS_NAMES: Record<KanbanTaskPriority, string> = {
   low: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",
@@ -204,13 +208,81 @@ export default function KanbanCard({ task, teamMembers, taskActions }: KanbanCar
     disabled: !taskPermissions.canMove,
   });
   const pointerDownPositionRef = useRef<{ x: number; y: number } | null>(null);
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isTouchPressActiveRef = useRef(false);
+  const wasLongPressedRef = useRef(false);
+  const stopBlockingReleaseClickRef = useRef<(() => void) | null>(null);
+
+  function cancelLongPress() {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  }
+
+  // The dialog opens under the finger, so the click from lifting it would land on the backdrop and close it.
+  function blockReleaseClick() {
+    function handleReleaseClick(event: globalThis.MouseEvent) {
+      event.preventDefault();
+      event.stopPropagation();
+      stopBlocking();
+    }
+    function stopBlocking() {
+      window.removeEventListener("click", handleReleaseClick, true);
+      stopBlockingReleaseClickRef.current = null;
+    }
+    window.addEventListener("click", handleReleaseClick, true);
+    stopBlockingReleaseClickRef.current = stopBlocking;
+  }
+
+  function handleEndPointerPress() {
+    cancelLongPress();
+    isTouchPressActiveRef.current = false;
+    const stopBlockingReleaseClick = stopBlockingReleaseClickRef.current;
+    if (stopBlockingReleaseClick) {
+      setTimeout(stopBlockingReleaseClick, RELEASE_CLICK_WINDOW_MS);
+    }
+  }
 
   function handlePointerDownCard(event: PointerEvent<HTMLElement>) {
     pointerDownPositionRef.current = { x: event.clientX, y: event.clientY };
+    wasLongPressedRef.current = false;
+    cancelLongPress();
+
+    // Touch never drags: a swipe scrolls the board, and holding opens the card's actions.
+    if (event.pointerType !== "mouse") {
+      isTouchPressActiveRef.current = true;
+      longPressTimerRef.current = setTimeout(() => {
+        longPressTimerRef.current = null;
+        wasLongPressedRef.current = true;
+        blockReleaseClick();
+        taskActions.onOpenCardActions(task);
+      }, LONG_PRESS_DELAY_MS);
+      return;
+    }
+
+    isTouchPressActiveRef.current = false;
     listeners?.onPointerDown?.(event);
   }
 
+  function handlePointerMoveCard(event: PointerEvent<HTMLElement>) {
+    const pointerDownPosition = pointerDownPositionRef.current;
+    if (
+      longPressTimerRef.current &&
+      pointerDownPosition &&
+      Math.hypot(event.clientX - pointerDownPosition.x, event.clientY - pointerDownPosition.y) >
+        CLICK_MOVEMENT_TOLERANCE_PX
+    ) {
+      cancelLongPress();
+    }
+  }
+
   function handleClickCard(event: MouseEvent<HTMLElement>) {
+    if (wasLongPressedRef.current) {
+      wasLongPressedRef.current = false;
+      return;
+    }
+
     const pointerDownPosition = pointerDownPositionRef.current;
     const wasDragged =
       pointerDownPosition !== null &&
@@ -232,15 +304,24 @@ export default function KanbanCard({ task, teamMembers, taskActions }: KanbanCar
     }
   }
 
+  useEffect(
+    () => () => {
+      cancelLongPress();
+      stopBlockingReleaseClickRef.current?.();
+    },
+    [],
+  );
+
   return (
     <ContextMenu>
-      {/* Click or Enter opens details; right-click (or the context-menu key) opens the menu; dragging moves the card. */}
+      {/* Click or Enter opens details; right-click (or the context-menu key) opens the menu; dragging moves the card.
+          On touch, tap opens details, swipe scrolls, and holding opens the actions dialog instead of this menu. */}
       <ContextMenuTrigger
         ref={setNodeRef}
         render={<li />}
         style={{ transform: CSS.Translate.toString(transform), transition }}
         className={cn(
-          "touch-none rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring",
+          "kanban-card-press-target touch-manipulation rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring",
           taskPermissions.canMove ? "cursor-grab" : "cursor-default",
           isDragging && "opacity-40",
         )}
@@ -249,6 +330,22 @@ export default function KanbanCard({ task, teamMembers, taskActions }: KanbanCar
         {...attributes}
         {...listeners}
         onPointerDown={handlePointerDownCard}
+        onPointerMove={handlePointerMoveCard}
+        onPointerUp={handleEndPointerPress}
+        onPointerCancel={handleEndPointerPress}
+        onTouchStart={(event) => event.preventBaseUIHandler()}
+        // Stops the browser's own image and link drag; card moves use dnd-kit.
+        onDragStart={(event) => event.preventDefault()}
+        onContextMenu={(event) => {
+          const isTouchContextMenu =
+            isTouchPressActiveRef.current ||
+            wasLongPressedRef.current ||
+            (event.nativeEvent as globalThis.PointerEvent).pointerType === "touch";
+          if (isTouchContextMenu) {
+            event.preventDefault();
+            event.preventBaseUIHandler();
+          }
+        }}
         onKeyDown={handleKeyDownCard}
         onClick={handleClickCard}
       >

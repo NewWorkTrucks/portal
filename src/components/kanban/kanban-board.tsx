@@ -26,6 +26,7 @@ import KanbanOnboardingTour from "@/components/kanban/kanban-onboarding-tour";
 import KanbanOpenTaskFromUrl from "@/components/kanban/kanban-open-task-from-url";
 import KanbanOperationNoteDialog from "@/components/kanban/kanban-operation-note-dialog";
 import KanbanStageTransitionDialog from "@/components/kanban/kanban-stage-transition-dialog";
+import KanbanCardActionsDialog from "@/components/kanban/kanban-card-actions-dialog";
 import KanbanTaskCreateDialog from "@/components/kanban/kanban-task-create-dialog";
 import KanbanTaskDetailsPanel from "@/components/kanban/kanban-task-details-panel";
 import KanbanTaskEditDialog from "@/components/kanban/kanban-task-edit-dialog";
@@ -110,6 +111,9 @@ export default function KanbanBoard() {
   // Kept after a dialog closes so its content doesn't vanish during the exit animation.
   const [dialogTask, setDialogTask] = useState<KanbanTask | null>(null);
   const [isNoteDialogOpen, setIsNoteDialogOpen] = useState(false);
+  const [isCardActionsDialogOpen, setIsCardActionsDialogOpen] = useState(false);
+  // Kept after the dialog closes, so its content stays during the exit animation.
+  const [cardActionsTaskId, setCardActionsTaskId] = useState<string | null>(null);
   const [isDetailsPanelOpen, setIsDetailsPanelOpen] = useState(false);
   // Kept after the panel closes, so its content stays during the exit animation.
   const [detailsTaskId, setDetailsTaskId] = useState<string | null>(null);
@@ -120,6 +124,10 @@ export default function KanbanBoard() {
   const activeTask = useMemo(
     () => (activeTaskId ? findTaskById(tasksByStatus, activeTaskId) : undefined),
     [activeTaskId, tasksByStatus],
+  );
+  const cardActionsTask = useMemo(
+    () => (cardActionsTaskId ? (findTaskById(tasksByStatus, cardActionsTaskId) ?? null) : null),
+    [cardActionsTaskId, tasksByStatus],
   );
 
   // E1-6: only matching cards are shown; dragging and saving still work on the full board.
@@ -421,7 +429,8 @@ export default function KanbanBoard() {
     }
   }
 
-  function openReviewDecision(task: KanbanTask, newStatus: KanbanStatus) {
+  /** A move without a drag (review decisions and the touch menu): the card moves once its form is saved. */
+  function openStatusChange(task: KanbanTask, newStatus: KanbanStatus) {
     openNoteDialog({
       kind: "move",
       task,
@@ -431,6 +440,11 @@ export default function KanbanBoard() {
     });
   }
 
+  function openCardActions(task: KanbanTask) {
+    setCardActionsTaskId(task.id);
+    setIsCardActionsDialogOpen(true);
+  }
+
   function openDetailsPanel(task: KanbanTask) {
     setDetailsTaskId(task.id);
     setIsDetailsPanelOpen(true);
@@ -438,14 +452,16 @@ export default function KanbanBoard() {
 
   const kanbanTaskActions: KanbanTaskActions = {
     onOpenDetails: openDetailsPanel,
+    onOpenCardActions: openCardActions,
+    onSelectStatus: openStatusChange,
     onClickEdit: (task) => openTaskDialog("edit", task),
     onClickRename: (task) => openTaskDialog("rename", task),
     onClickArchive: (task) => openNoteDialog({ kind: "archive", task }),
     onSelectOwner: handleSelectTaskOwner,
     onClickDailyUpdate: (task) => openNoteDialog({ kind: "daily-update", task }),
     onClickAddUpdate: (task) => openNoteDialog({ kind: "add-update", task }),
-    onClickApprove: (task) => openReviewDecision(task, "done"),
-    onClickReturn: (task) => openReviewDecision(task, "working-on-it"),
+    onClickApprove: (task) => openStatusChange(task, "done"),
+    onClickReturn: (task) => openStatusChange(task, "working-on-it"),
     onSelectAttachments: (task: KanbanTask, files: File[]) =>
       openNoteDialog({ kind: "attach-files", task, files }),
     onClickRemoveAttachment: (task: KanbanTask, attachment: KanbanAttachment) =>
@@ -507,7 +523,7 @@ export default function KanbanBoard() {
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
     >
-      <div className="flex items-center gap-2 px-6 pb-4">
+      <div className="flex flex-wrap items-center gap-2 px-4 pb-4 sm:px-6">
         <Button data-tour="new-task" onClick={() => openTaskDialog("create", null)}>
           <Plus aria-hidden />
           New task
@@ -539,7 +555,7 @@ export default function KanbanBoard() {
         totalTaskCount={totalTaskCount}
       />
 
-      <div data-tour="board-columns" className="flex min-h-0 flex-1 gap-4 overflow-x-auto px-6 pb-6">
+      <div data-tour="board-columns" className="flex min-h-0 flex-1 scroll-px-4 gap-4 overflow-x-auto px-4 pb-6 max-md:snap-x max-md:snap-proximity sm:px-6">
         {visibleColumns.map((column) => (
           <KanbanColumn
             key={column.status}
@@ -561,6 +577,13 @@ export default function KanbanBoard() {
         <KanbanOpenTaskFromUrl tasksByStatus={tasksByStatus} onOpenTask={openDetailsPanel} />
       </Suspense>
 
+      <KanbanCardActionsDialog
+        task={cardActionsTask}
+        teamMembers={teamMembers}
+        taskActions={kanbanTaskActions}
+        isOpen={isCardActionsDialogOpen && cardActionsTask !== null}
+        onOpenChange={setIsCardActionsDialogOpen}
+      />
       <KanbanTaskDetailsPanel
         task={detailsTask}
         teamMembers={teamMembers}

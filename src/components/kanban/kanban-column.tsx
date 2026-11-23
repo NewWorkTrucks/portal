@@ -38,7 +38,7 @@ export default function KanbanColumn({
       aria-labelledby={`kanban-column-${column.status}`}
       data-tour={`column-${column.status}`}
       className={cn(
-        "glass-panel flex max-h-full w-72 shrink-0 flex-col rounded-xl border bg-muted/50 transition-[colors,opacity]",
+        "glass-panel flex max-h-full w-[min(18rem,calc(100vw-3rem))] shrink-0 snap-start flex-col rounded-xl border bg-muted/50 transition-[colors,opacity]",
         isOver && !dropBlockedReason && "border-primary/40 bg-primary/5",
         dropBlockedReason && "border-dashed opacity-50",
       )}

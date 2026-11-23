@@ -344,6 +344,7 @@
   --glass-highlight: inset 0 1px 0 rgb(255 255 255 / 70%);
   --glass-shadow: 0 18px 48px rgb(70 50 30 / 18%);
   --glass-scrim: rgb(60 45 30 / 22%);
+  --glass-drawer: rgb(250 246 240 / 92%);
 }
 
 :root.dark:not([data-low-spec]) {
@@ -378,6 +379,7 @@
   --glass-highlight: inset 0 1px 0 rgb(255 255 255 / 8%);
   --glass-shadow: 0 18px 48px rgb(0 0 0 / 45%);
   --glass-scrim: rgb(10 7 5 / 45%);
+  --glass-drawer: rgb(35 29 24 / 92%);
 }
 
 :root:not([data-low-spec]) body {
@@ -416,6 +418,23 @@
 
 :root:not([data-low-spec]) .ffl-tour-popover .driver-popover-footer button {
   border-radius: var(--control-radius);
+}
+
+/* More solid than other glass: the drawer holds long text directly over the busy board. */
+:root:not([data-low-spec]) [data-slot="drawer-content"] {
+  background-color: var(--glass-drawer);
+  backdrop-filter: blur(24px) saturate(150%);
+  box-shadow: var(--glass-highlight), var(--glass-shadow);
+}
+
+/* Holding a card opens its actions, so the browser's own long-press behavior is turned off. */
+.kanban-card-press-target,
+.kanban-card-press-target * {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-user-drag: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* Low spec mode (Settings → Appearance): the classic design, with no animations, transitions or blur. */

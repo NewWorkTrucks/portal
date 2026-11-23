@@ -119,8 +119,15 @@ export type KanbanStageOperation = Extract<KanbanPendingNoteOperation, { kind: "
 /** Operations that only need a required note. */
 export type KanbanNoteOnlyOperation = Exclude<KanbanPendingNoteOperation, KanbanStageOperation>;
 
+/** Which list the touch card menu is showing. */
+export type KanbanCardActionsView = "actions" | "status" | "owner";
+
 export type KanbanTaskActions = {
   onOpenDetails: (task: KanbanTask) => void;
+  /** Touch screens: holding a card opens its actions in a dialog. */
+  onOpenCardActions: (task: KanbanTask) => void;
+  /** Moves a card without dragging; the stage's required form still opens. */
+  onSelectStatus: (task: KanbanTask, newStatus: KanbanStatus) => void;
   onClickEdit: (task: KanbanTask) => void;
   onClickRename: (task: KanbanTask) => void;
   onClickArchive: (task: KanbanTask) => void;
