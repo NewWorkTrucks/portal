@@ -6,6 +6,7 @@ import { useCurrentUser } from "@/components/current-user-provider";
 import { useDataMode } from "@/components/data-mode-provider";
 import BusinessSwitcherMenu from "@/components/layout/business-switcher-menu";
 import DataModeMenu from "@/components/layout/data-mode-menu";
+import MobileNavigationMenu from "@/components/layout/mobile-navigation-menu";
 import SettingsMenu from "@/components/layout/settings-menu";
 import UserProfile from "@/components/layout/user-profile";
 import UserSimulationMenu from "@/components/layout/user-simulation-menu";
@@ -28,16 +29,17 @@ export default function AppHeader() {
         isSimulatingUser && "border-amber-300 bg-amber-50 dark:border-amber-500/40 dark:bg-amber-500/10",
       )}
     >
-      <Link
-        href="/"
-        className="flex shrink-0 items-center gap-2 font-heading text-sm font-semibold whitespace-nowrap"
-      >
-        <LayoutDashboard aria-hidden className="size-4 text-primary" />
-        <span className="sm:hidden">FFL</span>
-        <span className="hidden sm:inline">FFL Operations Portal</span>
-      </Link>
+      {/* From md up the logo and name live in the sidebar instead. */}
+      <div className="flex shrink-0 items-center gap-1 md:hidden">
+        <MobileNavigationMenu />
+        <Link href="/" className="flex min-h-11 shrink-0 items-center gap-2 font-heading text-sm font-semibold">
+          <LayoutDashboard aria-hidden className="size-4 text-primary" />
+          {/* Phones show only the logo; the name stays for screen readers. */}
+          <span className="sr-only">FFL Operations Portal</span>
+        </Link>
+      </div>
 
-      <div className="flex min-w-0 items-center gap-1 sm:gap-3">
+      <div className="ml-auto flex min-w-0 items-center gap-1 sm:gap-3">
         {/* Build-time constant, so production never shows the development menus. */}
         {IS_USER_SIMULATION_ENABLED && <DataModeMenu />}
         <span data-tour="business" className="flex">
