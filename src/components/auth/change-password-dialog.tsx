@@ -1,6 +1,7 @@
 "use client";
 
 import { changePassword } from "@/api/auth";
+import { showSuccessToast } from "@/lib/toast";
 import ChangePasswordForm from "@/components/forms/change-password-form";
 import {
   Dialog,
@@ -25,8 +26,7 @@ export default function ChangePasswordDialog({
     const errorMessage = await changePassword(newPassword);
     if (!errorMessage) {
       onOpenChange(false);
-      // TODO: Replace with a toast once the portal has one.
-      window.alert("Your password was changed.");
+      showSuccessToast("Your password was changed");
     }
     return errorMessage;
   }

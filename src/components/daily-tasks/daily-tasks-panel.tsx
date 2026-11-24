@@ -10,7 +10,7 @@ import DashboardLoadErrorPanel from "@/components/dashboard/dashboard-load-error
 import { useDataMode } from "@/components/data-mode-provider";
 import { buttonVariants } from "@/components/ui/button";
 import { buildMockDailyTasks } from "@/data/mock-daily-tasks";
-import { describeDashboardLoadError } from "@/lib/dashboard";
+import { describeRequestError } from "@/lib/request-error";
 import type { DailyTasksLoadState } from "@/types/daily-tasks";
 
 const CLOCK_TICK_MS = 60_000;
@@ -49,7 +49,7 @@ export default function DailyTasksPanel() {
         }
       } catch (loadError) {
         if (!isCancelled) {
-          setLoadState({ status: "error", error: describeDashboardLoadError(loadError) });
+          setLoadState({ status: "error", error: describeRequestError(loadError, "load your Daily Tasks") });
         }
       }
     }

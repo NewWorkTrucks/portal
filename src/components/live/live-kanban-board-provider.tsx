@@ -15,6 +15,7 @@ import {
   toTransitionDetails,
 } from "@/lib/live/kanban-rows";
 import { buildMentionables, resolveMentionedNames } from "@/lib/mentions";
+import { showErrorToast, showRequestErrorToast } from "@/lib/toast";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 import type { KanbanAttachment } from "@/types/attachment";
 import type { KanbanAuditLogEntry } from "@/types/audit-log";
@@ -104,8 +105,7 @@ export default function LiveKanbanBoardProvider({ children }: LiveKanbanBoardPro
     const loadError =
       tasksResult.error ?? activityResult.error ?? attachmentsResult.error ?? groupsResult.error ?? groupMembersResult.error;
     if (loadError) {
-      // TODO: Replace with an inline error banner.
-      window.alert(`Couldn't load the board: ${loadError.message}`);
+      showRequestErrorToast(loadError, "load the board");
       return;
     }
 
@@ -161,6 +161,12 @@ export default function LiveKanbanBoardProvider({ children }: LiveKanbanBoardPro
     );
   }, [supabase, currentBusiness.id, nameByUserId]);
 
+  function showOversizedFileToast(fileName: string) {
+    showErrorToast(`${fileName} is too large`, {
+      description: `Files can be up to ${formatFileSize(MAX_ATTACHMENT_SIZE_BYTES)}. Pick a smaller file, then try again.`,
+    });
+  }
+
   /** Runs a kanban_* function, then reloads. Errors are shown and the board is reloaded. */
   async function callKanbanFunction(functionName: string, params: Record<string, unknown>) {
     if (!supabase) {
@@ -168,8 +174,7 @@ export default function LiveKanbanBoardProvider({ children }: LiveKanbanBoardPro
     }
     const { error } = await supabase.rpc(functionName, params);
     if (error) {
-      // TODO: Replace window.alert with a toast once the app has one.
-      window.alert(`Couldn't save: ${error.message}`);
+      showRequestErrorToast(error, "save your change", "The board has been reloaded.");
     }
     await loadBoard();
   }
@@ -185,7 +190,7 @@ export default function LiveKanbanBoardProvider({ children }: LiveKanbanBoardPro
     }
     const oversizedFile = files.find((file) => file.size > MAX_ATTACHMENT_SIZE_BYTES);
     if (oversizedFile) {
-      window.alert(`${oversizedFile.name} is over the ${formatFileSize(MAX_ATTACHMENT_SIZE_BYTES)} limit.`);
+      showOversizedFileToast(oversizedFile.name);
       return null;
     }
 
@@ -196,8 +201,7 @@ export default function LiveKanbanBoardProvider({ children }: LiveKanbanBoardPro
         .from(ATTACHMENT_BUCKET)
         .upload(storagePath, file, { contentType: file.type || undefined });
       if (uploadError) {
-        // TODO: Replace window.alert with a toast once the app has one.
-        window.alert(`Couldn't upload ${file.name}, so the update wasn't posted: ${uploadError.message}`);
+        showRequestErrorToast(uploadError, `upload ${file.name}`, "The update wasn't posted.");
         return null;
       }
       uploadedFiles.push({ fileName: file.name, sizeBytes: file.size, mimeType: file.type, storagePath });
@@ -371,7 +375,7 @@ export default function LiveKanbanBoardProvider({ children }: LiveKanbanBoardPro
     }
     const oversizedFile = files.find((file) => file.size > MAX_ATTACHMENT_SIZE_BYTES);
     if (oversizedFile) {
-      window.alert(`${oversizedFile.name} is over the ${formatFileSize(MAX_ATTACHMENT_SIZE_BYTES)} limit.`);
+      showOversizedFileToast(oversizedFile.name);
       return;
     }
 
@@ -381,7 +385,7 @@ export default function LiveKanbanBoardProvider({ children }: LiveKanbanBoardPro
         .from(ATTACHMENT_BUCKET)
         .upload(storagePath, file, { contentType: file.type || undefined });
       if (uploadError) {
-        window.alert(`Couldn't upload ${file.name}: ${uploadError.message}`);
+        showRequestErrorToast(uploadError, `upload ${file.name}`);
         continue;
       }
       await callKanbanFunction("kanban_add_attachment", {

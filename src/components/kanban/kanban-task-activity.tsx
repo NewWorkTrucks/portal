@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AUDIT_LOG_ACTION_DISPLAY, UPDATE_AUDIT_LOG_ACTIONS } from "@/constants/audit-log-actions";
 import { useTaskReceipts } from "@/hooks/use-task-receipts";
+import { showRequestErrorToast } from "@/lib/toast";
 import { formatAuditLogTimestamp } from "@/lib/kanban-audit-log";
 import type { KanbanAuditLogEntry } from "@/types/audit-log";
 import type {
@@ -108,8 +109,7 @@ function KanbanTaskActivityList({
       await addUpdateComment(task, updateId, note);
       setCommentingOnUpdateId(null);
     } catch (error) {
-      // TODO: Replace with a toast once the portal has one. The form stays open with the comment.
-      window.alert(`Couldn't post comment: ${error instanceof Error ? error.message : String(error)}`);
+      showRequestErrorToast(error, "post your comment", "It's still in the box.");
     }
   }
 

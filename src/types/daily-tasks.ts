@@ -1,4 +1,4 @@
-import type { DashboardLoadError } from "@/types/dashboard";
+import type { RequestErrorDescription } from "@/types/request-error";
 
 export type DailyTaskKind = "daily-update" | "start-work" | "follow-up" | "revisit" | "review" | "catch-up";
 
@@ -61,12 +61,12 @@ export type DailyTaskDayStatus =
 export type DailyTasksLoadState =
   | { status: "loading" }
   | { status: "ready"; dailyTasks: DailyTasksToday }
-  | { status: "error"; error: DashboardLoadError };
+  | { status: "error"; error: RequestErrorDescription };
 
 export type DailyTaskHistoryLoadState =
   | { status: "loading" }
   | { status: "ready"; history: DailyTaskHistory }
-  | { status: "error"; error: DashboardLoadError };
+  | { status: "error"; error: RequestErrorDescription };
 
 export type DailyTaskItemRowProps = {
   item: DailyTaskItem;
@@ -96,6 +96,6 @@ export type DailyTaskDayListProps = {
 };
 
 export type DashboardLoadErrorPanelProps = {
-  error: DashboardLoadError;
+  error: RequestErrorDescription;
   onRetry: () => void;
 };

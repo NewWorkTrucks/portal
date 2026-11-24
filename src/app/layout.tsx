@@ -5,6 +5,7 @@ import { DataModeProvider } from "@/components/data-mode-provider";
 import { DevicePreferencesProvider } from "@/components/device-preferences-provider";
 import { OnboardingTourProvider } from "@/components/onboarding-tour-provider";
 import { ThemeProvider } from "@/components/theme-provider";
+import ToastHost from "@/components/toast-host";
 import { buildThemeInitScript } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 
@@ -54,6 +55,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             </DataModeProvider>
           </DevicePreferencesProvider>
         </ThemeProvider>
+        <ToastHost />
       </body>
     </html>
   );

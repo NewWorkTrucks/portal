@@ -6,6 +6,7 @@ import { useCurrentUser } from "@/components/current-user-provider";
 import { useDataMode } from "@/components/data-mode-provider";
 import { MOCK_NOTIFICATIONS } from "@/data/mock-notifications";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
+import { showRequestErrorToast } from "@/lib/toast";
 import type { PortalNotification } from "@/types/notification";
 
 type PortalNotificationsHookValue = {
@@ -67,10 +68,7 @@ export function usePortalNotifications(): PortalNotificationsHookValue {
       try {
         await markNotificationsRead(notificationIds);
       } catch (error) {
-        // TODO: Replace with a toast once the portal has one.
-        window.alert(
-          `Couldn't mark notifications read: ${error instanceof Error ? error.message : String(error)}`,
-        );
+        showRequestErrorToast(error, "mark notifications read");
       }
       await loadNotifications();
     },

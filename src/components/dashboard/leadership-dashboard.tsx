@@ -14,7 +14,8 @@ import { useDataMode } from "@/components/data-mode-provider";
 import { Button } from "@/components/ui/button";
 import { buildMockLeadershipDashboard } from "@/data/mock-dashboard";
 import { MOCK_MENTION_GROUPS } from "@/data/mock-mention-groups";
-import { describeDashboardLoadError, formatDashboardUpdatedAt } from "@/lib/dashboard";
+import { formatDashboardUpdatedAt } from "@/lib/dashboard";
+import { describeRequestError } from "@/lib/request-error";
 import type { DashboardLoadState, LeadershipDashboardResult } from "@/types/dashboard";
 
 /**
@@ -66,7 +67,7 @@ export default function LeadershipDashboard() {
       );
     } catch (loadError) {
       if (requestId === latestRequestIdRef.current) {
-        setLoadState({ status: "error", error: describeDashboardLoadError(loadError) });
+        setLoadState({ status: "error", error: describeRequestError(loadError, "load the dashboard") });
       }
     }
   }, [currentBusiness.id, dataMode, isAllowedInMockMode]);

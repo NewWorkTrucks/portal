@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import type { RequestErrorDescription } from "@/types/request-error";
 import type { KanbanStatus, KanbanTaskPriority } from "@/types/kanban";
 
 export type DashboardAttentionReason =
@@ -133,16 +134,7 @@ export type DashboardLoadState =
   | { status: "loading" }
   | { status: "ready"; dashboard: LeadershipDashboard; isRefreshing: boolean }
   | { status: "not-allowed" }
-  | { status: "error"; error: DashboardLoadError };
-
-/** Why the dashboard couldn't load, in plain words, plus what to do about it. */
-export type DashboardLoadError = {
-  title: string;
-  /** What happened and what to do next. */
-  description: string;
-  /** The raw code and message, for the development lead. */
-  technicalDetails: string;
-};
+  | { status: "error"; error: RequestErrorDescription };
 
 export type DashboardPanelProps = {
   title: string;

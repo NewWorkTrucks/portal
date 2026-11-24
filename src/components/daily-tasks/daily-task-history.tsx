@@ -10,7 +10,7 @@ import { useDataMode } from "@/components/data-mode-provider";
 import { Button } from "@/components/ui/button";
 import { DAILY_TASK_HISTORY_MONTHS, DAY_OFF_DAYS_AHEAD } from "@/constants/daily-tasks";
 import { buildMockDailyTaskHistory, setMockDayOff } from "@/data/mock-daily-tasks";
-import { describeDashboardLoadError } from "@/lib/dashboard";
+import { describeRequestError } from "@/lib/request-error";
 import {
   addDaysToIsoDate,
   formatYearMonth,
@@ -88,7 +88,7 @@ export default function DailyTaskHistory() {
       }
       setReloadCount((currentCount) => currentCount + 1);
     } catch (saveError) {
-      const { title, description } = describeDashboardLoadError(saveError);
+      const { title, description } = describeRequestError(saveError, "change that day");
       setDayOffError(`${title}. ${description}`);
     } finally {
       setIsSavingDayOff(false);
@@ -119,7 +119,7 @@ export default function DailyTaskHistory() {
         }
       } catch (loadError) {
         if (!isCancelled) {
-          setLoadState({ status: "error", error: describeDashboardLoadError(loadError) });
+          setLoadState({ status: "error", error: describeRequestError(loadError, "load your history") });
         }
       }
     }
