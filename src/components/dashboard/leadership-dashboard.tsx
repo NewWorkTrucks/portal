@@ -1,12 +1,13 @@
 "use client";
 
-import { Lock, RefreshCw, RotateCcw, TriangleAlert } from "lucide-react";
+import { Lock, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getLeadershipDashboard } from "@/api/dashboard";
 import { useCurrentUser } from "@/components/current-user-provider";
 import DashboardAttentionList from "@/components/dashboard/dashboard-attention-list";
 import DashboardCompliance from "@/components/dashboard/dashboard-compliance";
 import DashboardDeferrals from "@/components/dashboard/dashboard-deferrals";
+import DashboardLoadErrorPanel from "@/components/dashboard/dashboard-load-error";
 import DashboardReviewSummary from "@/components/dashboard/dashboard-review-summary";
 import DashboardStageSnapshot from "@/components/dashboard/dashboard-stage-snapshot";
 import { useDataMode } from "@/components/data-mode-provider";
@@ -94,25 +95,7 @@ export default function LeadershipDashboard() {
   }
 
   if (loadState.status === "error") {
-    return (
-      <section role="alert" className="flex max-w-xl flex-col gap-3 rounded-lg border border-destructive/40 bg-card p-5 text-sm">
-        <h2 className="flex items-center gap-2 font-heading text-base font-semibold">
-          <TriangleAlert aria-hidden className="size-4 shrink-0 text-destructive" />
-          {loadState.error.title}
-        </h2>
-        <p className="text-muted-foreground">{loadState.error.description}</p>
-        <details className="text-xs text-muted-foreground">
-          <summary className="w-fit cursor-pointer rounded select-none hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring">
-            Technical details
-          </summary>
-          <p className="mt-1.5 rounded bg-muted px-2 py-1.5 font-mono break-all">{loadState.error.technicalDetails}</p>
-        </details>
-        <Button variant="outline" className="w-fit" onClick={handleClickRefresh}>
-          <RotateCcw aria-hidden />
-          Try again
-        </Button>
-      </section>
-    );
+    return <DashboardLoadErrorPanel error={loadState.error} onRetry={handleClickRefresh} />;
   }
 
   const { dashboard, isRefreshing } = loadState;

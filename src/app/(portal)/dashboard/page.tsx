@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import DailyTasksPanel from "@/components/daily-tasks/daily-tasks-panel";
 import LeadershipDashboard from "@/components/dashboard/leadership-dashboard";
 
 export const metadata: Metadata = {
@@ -15,6 +16,7 @@ export default function DashboardPage() {
         </p>
       </header>
 
+      <DailyTasksPanel />
       <LeadershipDashboard />
     </main>
   );
