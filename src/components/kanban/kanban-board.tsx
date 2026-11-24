@@ -18,7 +18,7 @@ import {
 import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { History, Lock, Plus } from "lucide-react";
 import Link from "next/link";
-import { Suspense, useCallback, useId, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { useDevicePreferences } from "@/components/device-preferences-provider";
 import { useKanbanBoard } from "@/components/kanban/kanban-board-provider";
 import { KanbanCardContent } from "@/components/kanban/kanban-card";
@@ -46,6 +46,7 @@ import {
   moveTaskToStatus,
   reorderTaskWithinStatus,
 } from "@/lib/kanban";
+import { celebrateCardDone } from "@/lib/confetti";
 import { filterKanbanTasksByStatus } from "@/lib/kanban-filters";
 import type { KanbanAttachment } from "@/types/attachment";
 import type { KanbanTaskFilters } from "@/types/kanban-filters";
@@ -64,6 +65,8 @@ import type {
 } from "@/types/kanban";
 
 const POINTER_ACTIVATION_DISTANCE_PX = 5;
+// Long enough for the stage and card entrance to finish on a seven-stage board.
+const ENTRANCE_DURATION_MS = 3000;
 
 const KEYBOARD_DRAG_CODES = {
   start: ["Space"],
@@ -97,7 +100,7 @@ export default function KanbanBoard() {
     getTaskPermissions,
     getMoveDeniedReason,
   } = useKanbanBoard();
-  const { isDoneColumnHidden } = useDevicePreferences();
+  const { isDoneColumnHidden, isLowSpecModeOn } = useDevicePreferences();
   const dndContextId = useId();
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: POINTER_ACTIVATION_DISTANCE_PX } }),
@@ -108,6 +111,8 @@ export default function KanbanBoard() {
     }),
   );
 
+  // The first-load entrance (stages, then cards) plays once; moves and live updates never replay it.
+  const [isEntering, setIsEntering] = useState(true);
   const [selectedView, setSelectedView] = useState<KanbanBoardView>(DEFAULT_KANBAN_BOARD_VIEW);
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
   const [tasksBeforeDrag, setTasksBeforeDrag] = useState<KanbanTasksByStatus | null>(null);
@@ -160,6 +165,15 @@ export default function KanbanBoard() {
     () => Object.values(tasksByStatus).reduce((taskCount, tasks) => taskCount + tasks.length, 0),
     [tasksByStatus],
   );
+
+  useEffect(() => {
+    // Waits for the first cards, so a board that loads slowly still gets its entrance.
+    if (!isEntering || totalTaskCount === 0) {
+      return;
+    }
+    const entranceTimer = setTimeout(() => setIsEntering(false), ENTRANCE_DURATION_MS);
+    return () => clearTimeout(entranceTimer);
+  }, [isEntering, totalTaskCount]);
 
   // The dragged card as it was when picked up, so permissions use its original column.
   const draggedTaskAtStart = useMemo(
@@ -447,8 +461,13 @@ export default function KanbanBoard() {
       return;
     }
 
-    await transitionTask(pendingNoteOperation.task.id, pendingNoteOperation.previousStatus, transition, files);
+    const movedTaskId = pendingNoteOperation.task.id;
+    await transitionTask(movedTaskId, pendingNoteOperation.previousStatus, transition, files);
     closeNoteDialogAfterSave();
+    // Confetti from the card once it lands in Done (drag, Approve and Change status all end here).
+    if (transition.status === "done" && !isLowSpecModeOn) {
+      void celebrateCardDone(movedTaskId);
+    }
   }
 
   async function handleConfirmDailyUpdate(dailyUpdate: KanbanDailyUpdate, files: File[]) {
@@ -624,9 +643,10 @@ export default function KanbanBoard() {
 
       {selectedView === "board" ? (
         <div data-tour="board-columns" className="flex min-h-0 flex-1 scroll-px-4 gap-4 overflow-x-auto px-4 pb-6 max-md:snap-x max-md:snap-proximity sm:px-6">
-          {visibleColumns.map((column) => (
+          {visibleColumns.map((column, columnIndex) => (
             <KanbanColumn
               key={column.status}
+              entranceColumnIndex={isEntering ? columnIndex : undefined}
               column={column}
               tasks={visibleTasksByStatus[column.status]}
               totalTaskCount={tasksByStatus[column.status].length}

@@ -3,7 +3,7 @@
 import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { Lock } from "lucide-react";
-import { useMemo } from "react";
+import { type CSSProperties, useMemo } from "react";
 import KanbanCard from "@/components/kanban/kanban-card";
 import { cn } from "@/lib/utils";
 import type { KanbanColumnDefinition, KanbanTask, KanbanTaskActions } from "@/types/kanban";
@@ -18,7 +18,12 @@ type KanbanColumnProps = {
   taskActions: KanbanTaskActions;
   /** Set while dragging a card the current user may not move into this column. */
   dropBlockedReason?: string | null;
+  /** This column's place in the board's first-load entrance. Undefined once the entrance is over. */
+  entranceColumnIndex?: number;
 };
+
+/** Long columns shouldn't make the last cards wait; they all join in after this many. */
+const MAX_ENTRANCE_CARD_INDEX = 12;
 
 export default function KanbanColumn({
   column,
@@ -27,17 +32,21 @@ export default function KanbanColumn({
   teamMembers,
   taskActions,
   dropBlockedReason,
+  entranceColumnIndex,
 }: KanbanColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id: column.status });
 
   const taskIds = useMemo(() => tasks.map((task) => task.id), [tasks]);
+  const isEntering = entranceColumnIndex !== undefined;
 
   return (
     <section
       ref={setNodeRef}
       aria-labelledby={`kanban-column-${column.status}`}
       data-tour={`column-${column.status}`}
+      style={isEntering ? ({ "--board-enter-index": entranceColumnIndex } as CSSProperties) : undefined}
       className={cn(
+        isEntering && "board-enter-column",
         "glass-panel flex max-h-full w-[min(18rem,calc(100vw-3rem))] shrink-0 snap-start flex-col rounded-xl border bg-muted/50 transition-[colors,opacity]",
         isOver && !dropBlockedReason && "border-primary/40 bg-primary/5",
         dropBlockedReason && "border-dashed opacity-50",
@@ -65,12 +74,17 @@ export default function KanbanColumn({
 
       <SortableContext id={column.status} items={taskIds} strategy={verticalListSortingStrategy}>
         <ul className="flex min-h-24 flex-1 flex-col gap-2 overflow-y-auto px-2 pb-2">
-          {tasks.map((task) => (
+          {tasks.map((task, taskIndex) => (
             <KanbanCard
               key={task.id}
               task={task}
               teamMembers={teamMembers}
               taskActions={taskActions}
+              entrance={
+                isEntering
+                  ? { columnIndex: entranceColumnIndex, cardIndex: Math.min(taskIndex, MAX_ENTRANCE_CARD_INDEX) }
+                  : undefined
+              }
             />
           ))}
           {tasks.length === 0 && (

@@ -449,3 +449,43 @@
   scroll-behavior: auto !important;
   backdrop-filter: none !important;
 }
+
+/* Board entrance: stages slide in one after another, then each stage's cards follow. Plays once,
+   when the board first loads. Off in the classic low spec design and for people who ask for less
+   motion. "backwards" fill only holds the hidden start state during the delay, so nothing is
+   left behind that could override the card's own styles afterwards. */
+:root {
+  --board-column-step: 200ms;
+  --board-column-duration: 350ms;
+  --board-card-step: 60ms;
+}
+
+@media (max-width: 767px) {
+  :root {
+    --board-column-step: 120ms;
+    --board-card-step: 40ms;
+  }
+}
+
+@keyframes board-enter {
+  from {
+    opacity: 0;
+    transform: translateY(0.75rem);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  :root:not([data-low-spec]) .board-enter-column {
+    animation: board-enter var(--board-column-duration) ease-out backwards;
+    animation-delay: calc(var(--board-enter-index) * var(--board-column-step));
+  }
+
+  :root:not([data-low-spec]) .board-enter-card {
+    animation: board-enter 300ms ease-out backwards;
+    animation-delay: calc(
+      var(--board-enter-index) * var(--board-column-step) + var(--board-column-duration) +
+        var(--board-card-index) * var(--board-card-step)
+    );
+  }
+}
+

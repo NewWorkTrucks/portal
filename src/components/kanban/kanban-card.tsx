@@ -1,7 +1,7 @@
 "use client";
 
 import { useSortable } from "@dnd-kit/sortable";
-import { type KeyboardEvent, type MouseEvent, type PointerEvent, useEffect, useRef } from "react";
+import { type CSSProperties, type KeyboardEvent, type MouseEvent, type PointerEvent, useEffect, useRef } from "react";
 import { CSS } from "@dnd-kit/utilities";
 import { motion, type TargetAndTransition, type Transition } from "framer-motion";
 import {
@@ -26,6 +26,7 @@ import { KANBAN_PRIORITY_BADGE_CLASS_NAMES } from "@/constants/kanban-task-prior
 import { cn } from "@/lib/utils";
 import { formatEstimatedTurnaround, formatKanbanDate } from "@/lib/kanban";
 import type { KanbanTask, KanbanTaskActions } from "@/types/kanban";
+import type { KanbanEntrance } from "@/types/kanban-entrance";
 import type { TeamMember } from "@/types/team";
 
 // A pointer that moves further than this between press and release was a drag, not a click.
@@ -39,6 +40,8 @@ type KanbanCardProps = {
   task: KanbanTask;
   teamMembers: TeamMember[];
   taskActions: KanbanTaskActions;
+  /** Set during the board's first-load entrance, so the card fades in after its stage. */
+  entrance?: KanbanEntrance;
 };
 
 // Hover lift for cards in a column. Translate only: scale or rotate would skew dnd-kit's measurements.
@@ -48,10 +51,11 @@ const CARD_HOVER_TRANSITION: Transition = { type: "spring", stiffness: 500, damp
 type KanbanCardContentProps = {
   task: KanbanTask;
   isOverlay?: boolean;
+  entrance?: KanbanEntrance;
 };
 
 /** Visual body of a card, shared by the in-column card and the drag overlay. */
-export function KanbanCardContent({ task, isOverlay = false }: KanbanCardContentProps) {
+export function KanbanCardContent({ task, isOverlay = false, entrance }: KanbanCardContentProps) {
   const { mentionables } = useKanbanBoard();
   const { currentUser } = useCurrentUser();
   const { isLowSpecModeOn } = useDevicePreferences();
@@ -65,7 +69,13 @@ export function KanbanCardContent({ task, isOverlay = false }: KanbanCardContent
     <motion.article
       whileHover={hasHoverEffect ? CARD_HOVER_LIFT : undefined}
       transition={CARD_HOVER_TRANSITION}
+      style={
+        entrance
+          ? ({ "--board-enter-index": entrance.columnIndex, "--board-card-index": entrance.cardIndex } as CSSProperties)
+          : undefined
+      }
       className={cn(
+        entrance && "board-enter-card",
         "relative flex flex-col gap-3 rounded-lg border bg-card p-3 text-card-foreground shadow-xs",
         // No rotate/scale here: transforms skew the overlay's measured rect and break keyboard moves.
         isOverlay && "cursor-grabbing shadow-lg ring-2 ring-primary/40",
@@ -167,7 +177,7 @@ export function KanbanCardContent({ task, isOverlay = false }: KanbanCardContent
   );
 }
 
-export default function KanbanCard({ task, teamMembers, taskActions }: KanbanCardProps) {
+export default function KanbanCard({ task, teamMembers, taskActions, entrance }: KanbanCardProps) {
   const { getTaskPermissions } = useKanbanBoard();
   const taskPermissions = getTaskPermissions(task);
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -294,6 +304,7 @@ export default function KanbanCard({ task, teamMembers, taskActions }: KanbanCar
         )}
         aria-label={task.title}
         data-tour="card"
+        data-task-id={task.id}
         {...attributes}
         {...listeners}
         onPointerDown={handlePointerDownCard}
@@ -316,7 +327,7 @@ export default function KanbanCard({ task, teamMembers, taskActions }: KanbanCar
         onKeyDown={handleKeyDownCard}
         onClick={handleClickCard}
       >
-        <KanbanCardContent task={task} />
+        <KanbanCardContent task={task} entrance={entrance} />
       </ContextMenuTrigger>
 
       <KanbanTaskContextMenuContent task={task} teamMembers={teamMembers} taskActions={taskActions} />
