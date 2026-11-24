@@ -47,6 +47,10 @@ export type KanbanTask = {
   description: string;
   status: KanbanStatus;
   ownerName: string;
+  /** Who gave the card to its owner: whoever created it or last changed its owner. */
+  assignedByName?: string;
+  /** The card this one is a subtask of. Only one level deep. */
+  parentTaskId?: string;
   priority: KanbanTaskPriority;
   /** Optional when the card is created; null until someone sets it. */
   dueDate: string | null;
@@ -181,7 +185,8 @@ export type KanbanBoardContextValue = {
   auditLogEntries: readonly KanbanAuditLogEntry[];
   /** Live drag preview only. Committed changes go through the actions below so they are logged. */
   setTasksByStatus: Dispatch<SetStateAction<KanbanTasksByStatus>>;
-  createTask: (formValues: KanbanTaskFormValues) => Promise<void>;
+  /** `parentTaskId` makes the new card a subtask of that card. */
+  createTask: (formValues: KanbanTaskFormValues, parentTaskId?: string) => Promise<void>;
   updateTask: (task: KanbanTask, formValues: KanbanTaskFormValues) => Promise<void>;
   renameTask: (task: KanbanTask, title: string, note: string) => Promise<void>;
   changeTaskOwner: (task: KanbanTask, ownerName: string, note: string) => Promise<void>;

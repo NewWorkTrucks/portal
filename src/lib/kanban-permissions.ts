@@ -13,7 +13,7 @@ export function getKanbanTaskPermissions(user: TeamMember, task: KanbanTask): Ka
   const isOwner = isTaskOwner(user, task);
   const canEdit = isOwner || capabilities.canEditAnyTask;
 
-  // Coordinators and admins may close their own cards; reviewers may not approve their own work.
+  // Department heads and admins may close their own cards; reviewers may not approve their own work.
   const canApproveOwnWork = capabilities.canMoveAnyTask;
 
   return {
@@ -50,7 +50,7 @@ export function getTaskMoveDeniedReason(
     return `As a ${roleDefinition.label}, you can only move your own cards.`;
   }
   if (newStatus === "done" && !roleDefinition.capabilities.canMoveToDone) {
-    return `Only reviewers, coordinators and admins can move cards to ${getColumnTitle("done")}. Submit it through ${getColumnTitle("needs-review")}.`;
+    return `Only reviewers, department heads and admins can move cards to ${getColumnTitle("done")}. Submit it through ${getColumnTitle("needs-review")}.`;
   }
   if (newStatus === "done" && isTaskOwner(user, task) && !roleDefinition.capabilities.canMoveAnyTask) {
     return `You can't approve your own work. Submit it through ${getColumnTitle("needs-review")} for someone else to review.`;

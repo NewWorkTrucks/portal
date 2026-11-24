@@ -26,7 +26,7 @@ export const ONBOARDING_TOUR_STEPS: OnboardingTourStep[] = [
     target: "profile",
     title: "Your role",
     description:
-      "Your role decides what you can do. Members work on their own cards, reviewers approve work, and coordinators and admins can manage every card.",
+      "Your role decides what you can do. Members work on their own cards, reviewers approve work, and department heads and admins can manage every card.",
     side: "bottom",
   },
   {
@@ -76,7 +76,7 @@ export const ONBOARDING_TOUR_STEPS: OnboardingTourStep[] = [
     description:
       "Cards waiting for review land here. Approve them with a closing summary, or return them with what needs to change.",
     side: "right",
-    roles: ["reviewer", "coordinator", "admin"],
+    roles: ["reviewer", "department_head", "admin"],
   },
   {
     id: "filters",
@@ -92,7 +92,7 @@ export const ONBOARDING_TOUR_STEPS: OnboardingTourStep[] = [
     description:
       "Every change, note and mention, with who did it and when. Entries can't be edited or deleted.",
     side: "bottom",
-    roles: ["coordinator", "admin"],
+    roles: ["department_head", "admin"],
   },
   {
     id: "notifications",

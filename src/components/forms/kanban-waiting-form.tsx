@@ -14,7 +14,7 @@ import type { Mentionable } from "@/types/mention";
 type KanbanWaitingFormProps = {
   mentionables: Mentionable[];
   onSubmit: (values: KanbanWaitingValues, files: File[]) => void | Promise<void>;
-  /** Shows "Add files". Only the card owner, coordinators and admins can attach files (E1-4). */
+  /** Shows "Add files". Only the card owner, department heads and admins can attach files (E1-4). */
   canAttachFiles?: boolean;
   onCancel?: () => void;
 };

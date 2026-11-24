@@ -157,7 +157,7 @@ export function KanbanBoardProvider({ initialTasks, children }: KanbanBoardProvi
     return auditLogEntry.id;
   }
 
-  async function createTask(formValues: KanbanTaskFormValues) {
+  async function createTask(formValues: KanbanTaskFormValues, parentTaskId?: string) {
     // Other stages have required fields, so new cards start in a stage without any (Epic 2).
     assertKanbanPermission(
       KANBAN_CREATABLE_STATUSES.includes(formValues.status),
@@ -169,6 +169,8 @@ export function KanbanBoardProvider({ initialTasks, children }: KanbanBoardProvi
       ...taskFields,
       id: `task-${crypto.randomUUID()}`,
       businessId: currentBusiness.id,
+      assignedByName: currentUser.name,
+      parentTaskId,
       latestNote: note,
       attachments: [],
       deferralCount: 0,
@@ -260,7 +262,7 @@ export function KanbanBoardProvider({ initialTasks, children }: KanbanBoardProvi
     );
     await changeKanbanTaskOwner(task.id, ownerName, note);
     setTasksByStatus((previousTasksByStatus) =>
-      updateTaskById(previousTasksByStatus, task.id, { ownerName, latestNote: note }),
+      updateTaskById(previousTasksByStatus, task.id, { ownerName, assignedByName: currentUser.name, latestNote: note }),
     );
     await recordAuditLogEntry(task, "owner-changed", `Owner: ${task.ownerName} → ${ownerName}`, note);
   }
@@ -347,7 +349,7 @@ export function KanbanBoardProvider({ initialTasks, children }: KanbanBoardProvi
     assertTaskInCurrentBusiness(task);
     assertKanbanPermission(
       getTaskPermissions(task).canPostDailyUpdate,
-      "Only the owner, a coordinator or an admin can post updates on cards in Working on It.",
+      "Only the owner, a department head or an admin can post updates on cards in Working on It.",
     );
 
     const dailyUpdateNote = describeDailyUpdate(dailyUpdate);

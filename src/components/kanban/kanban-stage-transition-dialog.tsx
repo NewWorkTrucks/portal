@@ -29,7 +29,7 @@ type KanbanStageTransitionDialogProps = {
   mentionables: Mentionable[];
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  /** Whether the current user may attach files to this card (owner, coordinator, admin). */
+  /** Whether the current user may attach files to this card (owner, department head, admin). */
   canAttachFiles: boolean;
   onConfirmTransition: (transition: KanbanStageTransition, files: File[]) => void | Promise<void>;
   onConfirmDailyUpdate: (dailyUpdate: KanbanDailyUpdate, files: File[]) => void | Promise<void>;

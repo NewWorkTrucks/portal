@@ -224,7 +224,7 @@ export default function LiveKanbanBoardProvider({ children }: LiveKanbanBoardPro
     return userId;
   }
 
-  async function createTask(formValues: KanbanTaskFormValues) {
+  async function createTask(formValues: KanbanTaskFormValues, parentTaskId?: string) {
     await callKanbanFunction("kanban_create_task", {
       p_business_id: currentBusiness.id,
       p_title: formValues.title,
@@ -237,6 +237,7 @@ export default function LiveKanbanBoardProvider({ children }: LiveKanbanBoardPro
       p_turnaround_unit: formValues.estimatedTurnaround?.unit ?? null,
       p_note: formValues.note,
       p_mentioned_user_ids: getMentionedUserIds(formValues.note),
+      p_parent_task_id: parentTaskId ?? null,
     });
   }
 
