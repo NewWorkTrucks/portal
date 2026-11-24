@@ -7,6 +7,7 @@ import KanbanOperationNoteForm from "@/components/forms/kanban-operation-note-fo
 import KanbanActivityFiles from "@/components/kanban/kanban-activity-files";
 import KanbanActivityReceipt from "@/components/kanban/kanban-activity-receipt";
 import { useKanbanBoard } from "@/components/kanban/kanban-board-provider";
+import ExpandableContent from "@/components/expandable-content";
 import RichNoteText from "@/components/rich-note-text";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -44,12 +45,14 @@ function KanbanTaskActivityEntry({
           {label.toLowerCase()} · {auditLogEntry.summary}
         </span>
       </p>
-      <RichNoteText
-        note={auditLogEntry.note}
-        mentionables={mentionables}
-        currentUserName={currentUser.name}
-        className="text-sm"
-      />
+      <ExpandableContent collapsedHeightRem={7}>
+        <RichNoteText
+          note={auditLogEntry.note}
+          mentionables={mentionables}
+          currentUserName={currentUser.name}
+          className="text-sm"
+        />
+      </ExpandableContent>
       <KanbanActivityFiles
         attachments={task.attachments.filter(
           (attachment) => attachment.activityId === auditLogEntry.id,

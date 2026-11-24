@@ -4,6 +4,8 @@ import {
   Archive,
   CalendarClock,
   CalendarDays,
+  ChevronDown,
+  ChevronUp,
   CircleCheck,
   ClipboardCheck,
   CornerUpLeft,
@@ -17,11 +19,12 @@ import {
   Timer,
   UserRoundPen,
 } from "lucide-react";
-import type { ReactNode } from "react";
+import { type ReactNode, useState } from "react";
 import AttachmentPicker from "@/components/attachment-picker";
 import { useCurrentUser } from "@/components/current-user-provider";
 import { useKanbanBoard } from "@/components/kanban/kanban-board-provider";
 import KanbanTaskActivity from "@/components/kanban/kanban-task-activity";
+import ExpandableContent from "@/components/expandable-content";
 import RichNoteText from "@/components/rich-note-text";
 import { Button } from "@/components/ui/button";
 import {
@@ -62,6 +65,9 @@ type KanbanTaskDetailsPanelProps = {
   onOpenChange: (isOpen: boolean) => void;
 };
 
+/** Attachments listed before the rest are tucked behind "Show more". */
+const VISIBLE_ATTACHMENT_COUNT = 5;
+
 type DetailRowProps = {
   label: string;
   children: ReactNode;
@@ -88,6 +94,9 @@ export default function KanbanTaskDetailsPanel({
   const { currentUser } = useCurrentUser();
   const isPhoneViewport = useIsPhoneViewport();
 
+  // Remembered per card, so opening another card starts with the short list again.
+  const [taskIdWithAllAttachmentsShown, setTaskIdWithAllAttachmentsShown] = useState<string | null>(null);
+
   const column = task ? KANBAN_COLUMNS.find((kanbanColumn) => kanbanColumn.status === task.status) : undefined;
   const priorityLabel = task
     ? KANBAN_TASK_PRIORITY_OPTIONS.find((option) => option.value === task.priority)?.label
@@ -99,6 +108,18 @@ export default function KanbanTaskDetailsPanel({
       !taskPermissions.canRename ||
       !taskPermissions.canChangeOwner ||
       !taskPermissions.canArchive);
+
+  const areAllAttachmentsShown = task !== null && taskIdWithAllAttachmentsShown === task.id;
+  const visibleAttachments = task
+    ? areAllAttachmentsShown
+      ? task.attachments
+      : task.attachments.slice(0, VISIBLE_ATTACHMENT_COUNT)
+    : [];
+  const hiddenAttachmentCount = task ? task.attachments.length - visibleAttachments.length : 0;
+
+  function handleClickToggleAttachments() {
+    setTaskIdWithAllAttachmentsShown((currentTaskId) => (currentTaskId === task?.id ? null : (task?.id ?? null)));
+  }
 
   const panelBody = task && taskPermissions && (
     <>
@@ -113,7 +134,9 @@ export default function KanbanTaskDetailsPanel({
           </span>
         </div>
         <SheetTitle className="text-base">{task.title}</SheetTitle>
-        <SheetDescription>{task.description || "No description."}</SheetDescription>
+        <SheetDescription render={<div />}>
+          <ExpandableContent collapsedHeightRem={5}>{task.description || "No description."}</ExpandableContent>
+        </SheetDescription>
       </SheetHeader>
 
       <div className="flex flex-col gap-6 p-4">
@@ -160,22 +183,34 @@ export default function KanbanTaskDetailsPanel({
 
         {task.waitingDetails && (
           <dl className="grid gap-3 rounded-md border p-3">
-            <DetailRow label="Waiting on">{task.waitingDetails.waitingOnWhat}</DetailRow>
+            <DetailRow label="Waiting on">
+              <ExpandableContent collapsedHeightRem={5}>{task.waitingDetails.waitingOnWhat}</ExpandableContent>
+            </DetailRow>
             <DetailRow label="Who">{task.waitingDetails.waitingOnWho}</DetailRow>
             <DetailRow label="Contacted">{formatKanbanDate(task.waitingDetails.contactedDate)}</DetailRow>
           </dl>
         )}
         {task.blockerDetails && (
           <dl className="grid gap-3 rounded-md border border-destructive/30 p-3">
-            <DetailRow label="Blocker">{task.blockerDetails.blocker}</DetailRow>
-            <DetailRow label="Tried">{task.blockerDetails.attempts}</DetailRow>
-            <DetailRow label="Help needed">{task.blockerDetails.helpNeeded}</DetailRow>
+            <DetailRow label="Blocker">
+              <ExpandableContent collapsedHeightRem={5}>{task.blockerDetails.blocker}</ExpandableContent>
+            </DetailRow>
+            <DetailRow label="Tried">
+              <ExpandableContent collapsedHeightRem={5}>{task.blockerDetails.attempts}</ExpandableContent>
+            </DetailRow>
+            <DetailRow label="Help needed">
+              <ExpandableContent collapsedHeightRem={5}>{task.blockerDetails.helpNeeded}</ExpandableContent>
+            </DetailRow>
           </dl>
         )}
         {task.completionSummary && (
           <dl className="grid gap-3 rounded-md border border-emerald-500/30 p-3">
-            <DetailRow label="Completed work">{task.completionSummary.completedWork}</DetailRow>
-            <DetailRow label="Outcome">{task.completionSummary.outcome}</DetailRow>
+            <DetailRow label="Completed work">
+              <ExpandableContent collapsedHeightRem={5}>{task.completionSummary.completedWork}</ExpandableContent>
+            </DetailRow>
+            <DetailRow label="Outcome">
+              <ExpandableContent collapsedHeightRem={5}>{task.completionSummary.outcome}</ExpandableContent>
+            </DetailRow>
           </dl>
         )}
 
@@ -184,12 +219,14 @@ export default function KanbanTaskDetailsPanel({
             <h3 id="task-details-latest-note" className="text-xs text-muted-foreground">
               Latest note
             </h3>
-            <RichNoteText
-              note={task.latestNote}
-              mentionables={mentionables}
-              currentUserName={currentUser.name}
-              className="rounded-md bg-muted px-3 py-2 text-sm"
-            />
+            <ExpandableContent collapsedHeightRem={7} className="rounded-md bg-muted px-3 py-2">
+              <RichNoteText
+                note={task.latestNote}
+                mentionables={mentionables}
+                currentUserName={currentUser.name}
+                className="text-sm"
+              />
+            </ExpandableContent>
           </section>
         )}
 
@@ -314,7 +351,7 @@ export default function KanbanTaskDetailsPanel({
 
           {task.attachments.length > 0 && (
             <ul className="flex flex-col divide-y rounded-md border">
-              {task.attachments.map((attachment) => (
+              {visibleAttachments.map((attachment) => (
                 <li key={attachment.id} className="flex items-center gap-2 px-3 py-2">
                   <div className="flex min-w-0 flex-1 flex-col">
                     <span className="truncate text-sm font-medium">{attachment.fileName}</span>
@@ -343,6 +380,19 @@ export default function KanbanTaskDetailsPanel({
                 </li>
               ))}
             </ul>
+          )}
+
+          {task.attachments.length > VISIBLE_ATTACHMENT_COUNT && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="self-start"
+              aria-expanded={areAllAttachmentsShown}
+              onClick={handleClickToggleAttachments}
+            >
+              {areAllAttachmentsShown ? <ChevronUp aria-hidden /> : <ChevronDown aria-hidden />}
+              {areAllAttachmentsShown ? "Show fewer files" : `Show ${hiddenAttachmentCount} more`}
+            </Button>
           )}
 
           <AttachmentPicker
