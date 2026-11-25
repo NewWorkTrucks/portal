@@ -105,7 +105,7 @@ export default function DailyTasksPanel() {
         <div className="flex flex-wrap items-center gap-2">
           <span
             className="flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-xs font-medium"
-            title="Only you can see your streak."
+            title="Only you, your department head and admins can see your streak."
           >
             <Flame aria-hidden className="size-3.5 text-primary" />
             {dailyTasks.currentStreak}-workday streak

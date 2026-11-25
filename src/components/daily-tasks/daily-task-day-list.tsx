@@ -26,7 +26,9 @@ export default function DailyTaskDayList({ workday, today, day, isSavingDayOff, 
   const status = getDailyTaskDayStatus(workday, today, day);
   const isDayOff = day?.isDayOff ?? false;
   const canChangeDayOff =
-    workday >= addDaysToIsoDate(today, -DAY_OFF_DAYS_BACK) && workday <= addDaysToIsoDate(today, DAY_OFF_DAYS_AHEAD);
+    onToggleDayOff !== undefined &&
+    workday >= addDaysToIsoDate(today, -DAY_OFF_DAYS_BACK) &&
+    workday <= addDaysToIsoDate(today, DAY_OFF_DAYS_AHEAD);
   const hasSeveralBusinesses = availableBusinesses.length > 1;
   const items = day?.items ?? [];
   const countText = day?.totalCount && day.totalCount > 0 && !isDayOff ? ` ${day.doneCount} of ${day.totalCount} done.` : "";
@@ -45,7 +47,7 @@ export default function DailyTaskDayList({ workday, today, day, isSavingDayOff, 
           </p>
         </div>
         {canChangeDayOff && (
-          <Button variant="outline" size="sm" disabled={isSavingDayOff} onClick={() => onToggleDayOff(workday, !isDayOff)}>
+          <Button variant="outline" size="sm" disabled={isSavingDayOff} onClick={() => onToggleDayOff?.(workday, !isDayOff)}>
             {isDayOff ? <Sun aria-hidden /> : <Moon aria-hidden />}
             {isDayOff ? "Remove day off" : "Mark as day off"}
           </Button>

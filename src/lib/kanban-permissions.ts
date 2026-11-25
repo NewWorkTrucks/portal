@@ -71,6 +71,21 @@ export function isInReportingLine(manager: TeamMember, person: TeamMember, every
   return false;
 }
 
+/**
+ * Whose Daily Tasks history `user` may open, themselves first (US-1.2): admins see everyone in a
+ * shared business, department heads see their reporting line. Mirrors
+ * kanban_private.can_view_daily_tasks_of.
+ */
+export function getDailyTaskHistoryPeople(user: TeamMember, everyone: TeamMember[]): TeamMember[] {
+  const otherPeople = everyone.filter(
+    (person) =>
+      person.id !== user.id &&
+      person.businessIds.some((businessId) => user.businessIds.includes(businessId)) &&
+      (user.role === "admin" || (user.role === "department_head" && isInReportingLine(user, person, everyone))),
+  );
+  return [user, ...otherPeople.sort((firstPerson, secondPerson) => firstPerson.name.localeCompare(secondPerson.name))];
+}
+
 /** Who `user` may give a card to: themselves and the people who report to them (G6, US-3.5). */
 export function getAssignableTeamMembers(
   user: TeamMember,
