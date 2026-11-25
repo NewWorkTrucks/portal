@@ -103,10 +103,12 @@ export type KanbanTaskFormValues = Pick<
 > & {
   /** Explanation for this change, recorded in the audit log and shown as the card's latest note. Required on edits, optional on create. */
   note: string;
+  /** Create only: how the new card repeats, saved right after it is created (US-1.3). */
+  recurrence?: KanbanRecurrenceFormValues;
 };
 
 /** Task fields an edit may change. Status is excluded: it only changes by moving the card. */
-export type KanbanTaskEditableFields = Omit<KanbanTaskFormValues, "status" | "note">;
+export type KanbanTaskEditableFields = Omit<KanbanTaskFormValues, "status" | "note" | "recurrence">;
 
 export type KanbanTaskFormMode = "create" | "edit";
 

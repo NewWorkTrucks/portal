@@ -53,6 +53,7 @@ export default function KanbanTaskEditDialog({
               dueDate: task.dueDate,
               estimatedTurnaround: task.estimatedTurnaround,
               note: "",
+              recurrence: task.recurrence ? { rule: task.recurrence.rule, time: task.recurrence.time } : undefined,
             }}
             teamMembers={teamMembers}
             onSubmit={onSubmit}

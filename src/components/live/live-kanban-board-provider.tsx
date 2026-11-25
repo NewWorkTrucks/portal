@@ -185,15 +185,17 @@ export default function LiveKanbanBoardProvider({ children }: LiveKanbanBoardPro
   }
 
   /** Runs a kanban_* function, then reloads. Errors are shown and the board is reloaded. */
-  async function callKanbanFunction(functionName: string, params: Record<string, unknown>) {
+  /** Returns what the function returned, or null when it failed. */
+  async function callKanbanFunction(functionName: string, params: Record<string, unknown>): Promise<unknown> {
     if (!supabase) {
-      return;
+      return null;
     }
-    const { error } = await supabase.rpc(functionName, params);
+    const { data, error } = await supabase.rpc(functionName, params);
     if (error) {
       showRequestErrorToast(error, "save your change", "The board has been reloaded.");
     }
     await loadBoard();
+    return error ? null : data;
   }
 
   /**
@@ -242,7 +244,7 @@ export default function LiveKanbanBoardProvider({ children }: LiveKanbanBoardPro
   }
 
   async function createTask(formValues: KanbanTaskFormValues, parentTaskId?: string) {
-    await callKanbanFunction("kanban_create_task", {
+    const createdTaskRow = (await callKanbanFunction("kanban_create_task", {
       p_business_id: currentBusiness.id,
       p_title: formValues.title,
       p_description: formValues.description,
@@ -255,7 +257,11 @@ export default function LiveKanbanBoardProvider({ children }: LiveKanbanBoardPro
       p_note: formValues.note,
       p_mentioned_user_ids: getMentionedUserIds(formValues.note),
       p_parent_task_id: parentTaskId ?? null,
-    });
+    })) as KanbanTaskRow | null;
+    // The repeat is saved right after the card exists; if that fails, the card stays without one.
+    if (createdTaskRow && formValues.recurrence) {
+      await saveTaskRecurrence(createdTaskRow.id, formValues.recurrence);
+    }
   }
 
   async function updateTask(task: KanbanTask, formValues: KanbanTaskFormValues) {
@@ -283,8 +289,12 @@ export default function LiveKanbanBoardProvider({ children }: LiveKanbanBoardPro
   }
 
   async function setTaskRecurrence(task: KanbanTask, values: KanbanRecurrenceFormValues) {
+    await saveTaskRecurrence(task.id, values);
+  }
+
+  async function saveTaskRecurrence(taskId: string, values: KanbanRecurrenceFormValues) {
     await callKanbanFunction("kanban_set_task_recurrence", {
-      p_task_id: task.id,
+      p_task_id: taskId,
       p_recurrence: values?.rule ?? null,
       p_time: values?.time ?? null,
       p_description: values ? describeRecurrence(values.rule, values.time) : null,

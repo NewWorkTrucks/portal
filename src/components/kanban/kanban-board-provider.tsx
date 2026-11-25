@@ -186,9 +186,11 @@ export function KanbanBoardProvider({ initialTasks, children }: KanbanBoardProvi
       `New cards start in ${KANBAN_CREATABLE_STATUSES.map(getColumnTitle).join(" or ")}.`,
     );
 
-    const { note, ...taskFields } = formValues;
+    const { note, recurrence, ...taskFields } = formValues;
     const newTask: KanbanTask = {
       ...taskFields,
+      // Mock mode only keeps the rule; the database works out when the card comes back.
+      recurrence: recurrence ? { rule: recurrence.rule, time: recurrence.time, nextOccurrenceAt: null } : undefined,
       id: `task-${crypto.randomUUID()}`,
       businessId: currentBusiness.id,
       assignedByName: currentUser.name,
@@ -212,6 +214,9 @@ export function KanbanBoardProvider({ initialTasks, children }: KanbanBoardProvi
       `Created in ${getColumnTitle(newTask.status)} for ${newTask.ownerName}${turnaroundSummary}`,
       note || CREATED_WITHOUT_NOTE,
     );
+    if (recurrence) {
+      await recordAuditLogEntry(newTask, "edited", "Repeat set", `Repeats ${describeRecurrence(recurrence.rule, recurrence.time)}.`);
+    }
   }
 
   function assertTaskInCurrentBusiness(task: Pick<KanbanTask, "businessId">) {
@@ -253,10 +258,11 @@ export function KanbanBoardProvider({ initialTasks, children }: KanbanBoardProvi
     setTasksByStatus((previousTasksByStatus) =>
       updateTaskById(previousTasksByStatus, task.id, {
         ...editedFields,
-        latestNote: formValues.note,
+        // The note is optional; without one the card keeps its latest note, as in the database.
+        latestNote: formValues.note || task.latestNote,
       }),
     );
-    await recordAuditLogEntry({ ...task, ...editedFields }, "edited", editSummary, formValues.note);
+    await recordAuditLogEntry({ ...task, ...editedFields }, "edited", editSummary, formValues.note || "Details edited.");
   }
 
   async function renameTask(task: KanbanTask, title: string, note: string) {

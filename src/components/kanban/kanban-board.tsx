@@ -48,6 +48,7 @@ import {
   moveTaskToStatus,
   reorderTaskWithinStatus,
 } from "@/lib/kanban";
+import { isSameRecurrence } from "@/lib/kanban-recurrence";
 import { celebrateCardDone } from "@/lib/confetti";
 import { filterKanbanTasksByStatus } from "@/lib/kanban-filters";
 import { getTaskReviewerName, isTaskPartOfUsersWork } from "@/lib/kanban-permissions";
@@ -92,6 +93,7 @@ export default function KanbanBoard() {
     setTasksByStatus,
     createTask,
     updateTask,
+    setTaskRecurrence,
     renameTask,
     changeTaskOwner,
     archiveTask,
@@ -429,6 +431,9 @@ export default function KanbanBoard() {
     }
 
     await updateTask(dialogTask, formValues);
+    if (!isSameRecurrence(dialogTask.recurrence, formValues.recurrence)) {
+      await setTaskRecurrence(dialogTask, formValues.recurrence ?? null);
+    }
     setOpenDialogKind(null);
   }
 
