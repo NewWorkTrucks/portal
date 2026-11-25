@@ -17,6 +17,7 @@ import {
 } from "@/api/kanban";
 import { useCurrentUser } from "@/components/current-user-provider";
 import { MAX_ATTACHMENT_SIZE_BYTES } from "@/constants/attachments";
+import { KANBAN_ROLE_DEFINITIONS } from "@/constants/kanban-role-capabilities";
 import { KANBAN_CREATABLE_STATUSES } from "@/constants/kanban-stages";
 import { MOCK_MENTION_AUTO_INCLUDE_RULES, MOCK_MENTION_GROUPS } from "@/data/mock-mention-groups";
 import {
@@ -158,6 +159,10 @@ export function KanbanBoardProvider({ initialTasks, children }: KanbanBoardProvi
   }
 
   async function createTask(formValues: KanbanTaskFormValues, parentTaskId?: string) {
+    assertKanbanPermission(
+      KANBAN_ROLE_DEFINITIONS[currentUser.role].capabilities.canCreateTasks,
+      "Only department heads can create cards. Ask yours to add it.",
+    );
     // Other stages have required fields, so new cards start in a stage without any (Epic 2).
     assertKanbanPermission(
       KANBAN_CREATABLE_STATUSES.includes(formValues.status),
@@ -204,7 +209,7 @@ export function KanbanBoardProvider({ initialTasks, children }: KanbanBoardProvi
   }
 
   function getMoveDeniedReason(task: KanbanTask, newStatus: KanbanStatus) {
-    return getTaskMoveDeniedReason(currentUser, task, newStatus);
+    return getTaskMoveDeniedReason(currentUser, task, newStatus, allTeamMembers);
   }
 
   async function updateTask(task: KanbanTask, formValues: KanbanTaskFormValues) {

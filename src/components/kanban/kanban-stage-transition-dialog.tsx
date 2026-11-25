@@ -20,12 +20,12 @@ import { getColumnTitle } from "@/lib/kanban";
 import type { KanbanStageOperation } from "@/types/kanban";
 import type { KanbanDailyUpdate, KanbanStageTransition } from "@/types/kanban-stages";
 import type { Mentionable } from "@/types/mention";
-import type { TeamMember } from "@/types/team";
 
 type KanbanStageTransitionDialogProps = {
   /** Kept after the dialog closes so its content doesn't vanish during the exit animation. */
   operation: KanbanStageOperation | null;
-  reviewerOptions: TeamMember[];
+  /** Who reviews the card when it's submitted; null at the top of the chain (US-4.2). */
+  reviewerName: string | null;
   mentionables: Mentionable[];
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
@@ -42,7 +42,7 @@ function TaskTitle({ title }: { title: string }) {
 /** Shows the required form for entering a stage (Epic 2), or the daily update form (E2-3). */
 export default function KanbanStageTransitionDialog({
   operation,
-  reviewerOptions,
+  reviewerName,
   mentionables,
   isOpen,
   onOpenChange,
@@ -95,7 +95,7 @@ export default function KanbanStageTransitionDialog({
           description: moveDescription,
           form: (
             <KanbanReviewRequestForm
-              reviewerOptions={reviewerOptions}
+              reviewerName={reviewerName}
               mentionables={mentionables}
               onSubmit={(values, files) => onConfirmTransition({ status: "needs-review", ...values }, files)}
               canAttachFiles={canAttachFiles}

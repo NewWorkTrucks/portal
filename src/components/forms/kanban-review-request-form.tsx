@@ -5,21 +5,14 @@ import RichNoteEditor from "@/components/rich-note-editor";
 import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import UpdateFilesField from "@/components/update-files-field";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import UserAvatar from "@/components/user-avatar";
 import { getNoteLengthError } from "@/lib/rich-note";
 import type { KanbanReviewRequestValues } from "@/types/kanban-stages";
 import type { Mentionable } from "@/types/mention";
-import type { TeamMember } from "@/types/team";
 
 type KanbanReviewRequestFormProps = {
-  reviewerOptions: TeamMember[];
+  /** Who reviews it: the person who assigned the card (US-4.2). Null when nobody is above the owner. */
+  reviewerName: string | null;
   mentionables: Mentionable[];
   onSubmit: (values: KanbanReviewRequestValues, files: File[]) => void | Promise<void>;
   /** Shows "Add files". Only the card owner, department heads and admins can attach files (E1-4). */
@@ -27,15 +20,14 @@ type KanbanReviewRequestFormProps = {
   onCancel?: () => void;
 };
 
-/** E2-4: submitting work for review needs a reviewer, who is mentioned on the request. */
+/** US-4.1, 4.2: submitting work sends it to whoever assigned it, who is mentioned on the request. */
 export default function KanbanReviewRequestForm({
-  reviewerOptions,
+  reviewerName,
   mentionables,
   onSubmit,
   canAttachFiles = false,
   onCancel,
 }: KanbanReviewRequestFormProps) {
-  const [reviewerName, setReviewerName] = useState("");
   const [note, setNote] = useState("");
   const [formErrors, setFormErrors] = useState<Partial<Record<keyof KanbanReviewRequestValues, string>>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -43,11 +35,11 @@ export default function KanbanReviewRequestForm({
 
   async function handleSubmitForm(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!reviewerName) {
+      return;
+    }
 
     const validationErrors: Partial<Record<keyof KanbanReviewRequestValues, string>> = {};
-    if (!reviewerName) {
-      validationErrors.reviewerName = "Pick a reviewer.";
-    }
     const noteLengthError = getNoteLengthError(note);
     if (!note.trim()) {
       validationErrors.note = "A note is required.";
@@ -70,33 +62,23 @@ export default function KanbanReviewRequestForm({
   return (
     <form onSubmit={handleSubmitForm} noValidate className="flex flex-col gap-6">
       <FieldGroup>
-        <Field data-invalid={Boolean(formErrors.reviewerName)}>
-          <FieldLabel htmlFor="kanban-review-reviewer">Reviewer</FieldLabel>
-          <Select
-            value={reviewerName}
-            onValueChange={(selectedReviewerName) => {
-              setReviewerName(selectedReviewerName ?? "");
-              setFormErrors((previousErrors) => ({ ...previousErrors, reviewerName: undefined }));
-            }}
-          >
-            <SelectTrigger
-              id="kanban-review-reviewer"
-              className="w-full"
-              aria-invalid={Boolean(formErrors.reviewerName)}
-            >
-              <SelectValue placeholder="Choose a reviewer" />
-            </SelectTrigger>
-            <SelectContent>
-              {reviewerOptions.map((reviewer) => (
-                <SelectItem key={reviewer.id} value={reviewer.name}>
-                  <UserAvatar name={reviewer.name} className="size-5" />
-                  {reviewer.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <FieldDescription>They&rsquo;ll be mentioned on the review request.</FieldDescription>
-          <FieldError>{formErrors.reviewerName}</FieldError>
+        <Field data-invalid={!reviewerName}>
+          <FieldLabel>Reviewer</FieldLabel>
+          {reviewerName ? (
+            <>
+              <p className="flex items-center gap-2 text-sm">
+                <UserAvatar name={reviewerName} className="size-5" />
+                {reviewerName}
+              </p>
+              <FieldDescription>
+                The person who assigned this card reviews it. They&rsquo;ll be mentioned on the request.
+              </FieldDescription>
+            </>
+          ) : (
+            <FieldError>
+              Nobody is above you to review this card, so move it straight to Done instead.
+            </FieldError>
+          )}
         </Field>
 
         <Field data-invalid={Boolean(formErrors.note)}>
@@ -130,7 +112,7 @@ export default function KanbanReviewRequestForm({
             Cancel
           </Button>
         )}
-        <Button type="submit" disabled={isSubmitting}>
+        <Button type="submit" disabled={isSubmitting || !reviewerName}>
           Request review
         </Button>
       </div>

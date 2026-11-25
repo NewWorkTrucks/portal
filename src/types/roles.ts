@@ -1,14 +1,16 @@
 /** Portal roles from the user stories (E4-1). */
-export type PortalRole = "member" | "reviewer" | "department_head" | "admin";
+export type PortalRole = "member" | "department_head" | "admin";
 
-/** What a role may do on cards it does not own. Every role can always work on its own cards. */
+/**
+ * Task authority by role (US-3.4). Every role can move, update and submit its own cards; reviewing
+ * isn't a role ability, it belongs to whoever assigned the card (US-4.2).
+ */
 export type KanbanRoleCapabilities = {
+  /** Create cards and subtasks. Department heads and admins only. */
+  canCreateTasks: boolean;
+  /** Edit or rename any card, including your own. Members can't edit cards they were given. */
   canEditAnyTask: boolean;
   canMoveAnyTask: boolean;
-  /** Reviewers: move any card out of Needs Review (approve or return it, E2-5). */
-  canReviewTasks: boolean;
-  /** Only authorized accounts may mark work Done, even on their own cards. */
-  canMoveToDone: boolean;
   canReassignAnyTask: boolean;
   canArchiveTasks: boolean;
 };
@@ -28,7 +30,7 @@ export type KanbanTaskPermissions = {
   canMove: boolean;
   /** Post the daily update for a card in Working on It (E2-3). */
   canPostDailyUpdate: boolean;
-  /** Approve or return a card in Needs Review (E2-5). Reviewers can't review their own work. */
+  /** Approve or return a card in Needs Review. Only the card's reviewer, its assigner (US-4.7). */
   canReview: boolean;
   /** Post an update or comment on a card in any stage. Anyone in the card's business can. */
   canAddUpdate: boolean;

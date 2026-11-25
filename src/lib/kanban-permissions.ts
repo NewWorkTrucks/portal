@@ -8,30 +8,41 @@ function isTaskOwner(user: TeamMember, task: KanbanTask): boolean {
   return task.ownerName === user.name;
 }
 
+/**
+ * Who reviews `task` when it's submitted (US-4.2): whoever assigned it, unless they gave it to
+ * themselves, then the person the owner reports to. Null at the top of the chain, where nobody is
+ * above the owner and they close the card themselves. Mirrors kanban_private.task_reviewer.
+ */
+export function getTaskReviewerName(task: KanbanTask, teamMembers: TeamMember[]): string | null {
+  const businessMembers = teamMembers.filter((teamMember) => teamMember.businessIds.includes(task.businessId));
+  if (task.assignedByName && task.assignedByName !== task.ownerName) {
+    const assigner = businessMembers.find((teamMember) => teamMember.name === task.assignedByName);
+    if (assigner) {
+      return assigner.name;
+    }
+  }
+  const owner = teamMembers.find((teamMember) => teamMember.name === task.ownerName);
+  const ownerManager = businessMembers.find((teamMember) => teamMember.id === owner?.reportsToId);
+  return ownerManager?.name ?? null;
+}
+
 export function getKanbanTaskPermissions(user: TeamMember, task: KanbanTask): KanbanTaskPermissions {
   const capabilities = KANBAN_ROLE_DEFINITIONS[user.role].capabilities;
   const isOwner = isTaskOwner(user, task);
-  const canEdit = isOwner || capabilities.canEditAnyTask;
-
-  // Department heads and admins may close their own cards; reviewers may not approve their own work.
-  const canApproveOwnWork = capabilities.canMoveAnyTask;
+  // US-3.4: only department heads and admins edit cards; members work on the ones they're given.
+  const canEdit = capabilities.canEditAnyTask;
+  // US-4.7: only the card's reviewer, its assigner, approves or returns it.
+  const isReviewer = task.status === "needs-review" && task.reviewerName === user.name;
 
   return {
     canEdit,
     canRename: canEdit,
-    canChangeOwner: isOwner || capabilities.canReassignAnyTask,
+    canChangeOwner: capabilities.canReassignAnyTask,
     canArchive: capabilities.canArchiveTasks,
-    canMove:
-      isOwner ||
-      capabilities.canMoveAnyTask ||
-      (capabilities.canReviewTasks && task.status === "needs-review"),
-    canPostDailyUpdate: task.status === "working-on-it" && canEdit,
-    canReview:
-      task.status === "needs-review" &&
-      capabilities.canReviewTasks &&
-      capabilities.canMoveToDone &&
-      (!isOwner || canApproveOwnWork),
-    canManageAttachments: canEdit,
+    canMove: isOwner || capabilities.canMoveAnyTask || isReviewer,
+    canPostDailyUpdate: task.status === "working-on-it" && (isOwner || canEdit),
+    canReview: isReviewer,
+    canManageAttachments: isOwner || canEdit,
     // Updates don't change the card, so anyone who can see it may post one; the business
     // check in the board provider keeps it to the card's own business.
     canAddUpdate: true,
@@ -43,17 +54,22 @@ export function getTaskMoveDeniedReason(
   user: TeamMember,
   task: KanbanTask,
   newStatus: KanbanStatus,
+  teamMembers: TeamMember[],
 ): string | null {
-  const roleDefinition = KANBAN_ROLE_DEFINITIONS[user.role];
+  const taskPermissions = getKanbanTaskPermissions(user, task);
 
-  if (!getKanbanTaskPermissions(user, task).canMove) {
-    return `As a ${roleDefinition.label}, you can only move your own cards.`;
+  if (!taskPermissions.canMove) {
+    return "You can only move your own cards.";
   }
-  if (newStatus === "done" && !roleDefinition.capabilities.canMoveToDone) {
-    return `Only reviewers, department heads and admins can move cards to ${getColumnTitle("done")}. Submit it through ${getColumnTitle("needs-review")}.`;
-  }
-  if (newStatus === "done" && isTaskOwner(user, task) && !roleDefinition.capabilities.canMoveAnyTask) {
-    return `You can't approve your own work. Submit it through ${getColumnTitle("needs-review")} for someone else to review.`;
+  if (newStatus === "done" && !taskPermissions.canReview) {
+    // Top of the chain, on a card they gave themselves: nobody else can review it.
+    if (isTaskOwner(user, task) && getTaskReviewerName(task, teamMembers) === null) {
+      return null;
+    }
+    if (isTaskOwner(user, task)) {
+      return `You can't mark your own work Done. Submit it through ${getColumnTitle("needs-review")}.`;
+    }
+    return `Only the person who assigned this card can approve it, once it's in ${getColumnTitle("needs-review")}.`;
   }
 
   return null;
