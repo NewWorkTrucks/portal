@@ -1,7 +1,7 @@
 "use client";
 
 import { useSortable } from "@dnd-kit/sortable";
-import { type CSSProperties, type KeyboardEvent, type MouseEvent, type PointerEvent, useEffect, useRef } from "react";
+import { type CSSProperties, type KeyboardEvent, type MouseEvent, type PointerEvent, useEffect, useMemo, useRef } from "react";
 import { CSS } from "@dnd-kit/utilities";
 import { motion, type TargetAndTransition, type Transition } from "framer-motion";
 import {
@@ -20,13 +20,14 @@ import { ContextMenu, ContextMenuTrigger } from "@/components/ui/context-menu";
 import { useCurrentUser } from "@/components/current-user-provider";
 import { useDevicePreferences } from "@/components/device-preferences-provider";
 import { useKanbanBoard } from "@/components/kanban/kanban-board-provider";
+import KanbanSubtaskProgress from "@/components/kanban/kanban-subtask-progress";
 import KanbanTaskContextMenuContent from "@/components/kanban/kanban-task-context-menu-content";
 import MentionText from "@/components/mention-text";
 import { toPlainNoteText } from "@/lib/rich-note";
 import UserAvatar from "@/components/user-avatar";
 import { KANBAN_PRIORITY_BADGE_CLASS_NAMES } from "@/constants/kanban-task-priorities";
 import { cn } from "@/lib/utils";
-import { formatEstimatedTurnaround, formatKanbanDate } from "@/lib/kanban";
+import { findSubtasksOf, formatEstimatedTurnaround, formatKanbanDate, getSubtaskProgress } from "@/lib/kanban";
 import type { KanbanTask, KanbanTaskActions } from "@/types/kanban";
 import type { KanbanEntrance } from "@/types/kanban-entrance";
 
@@ -56,9 +57,14 @@ type KanbanCardContentProps = {
 
 /** Visual body of a card, shared by the in-column card and the drag overlay. */
 export function KanbanCardContent({ task, isOverlay = false, entrance }: KanbanCardContentProps) {
-  const { mentionables } = useKanbanBoard();
+  const { mentionables, tasksByStatus } = useKanbanBoard();
   const { currentUser } = useCurrentUser();
   const { isLowSpecModeOn } = useDevicePreferences();
+
+  const subtaskProgress = useMemo(
+    () => (task.parentTaskId ? null : getSubtaskProgress(findSubtasksOf(tasksByStatus, task.id))),
+    [task.id, task.parentTaskId, tasksByStatus],
+  );
 
   // The drag overlay and low spec mode get no hover animation.
   const hasHoverEffect = !isOverlay && !isLowSpecModeOn;
@@ -135,6 +141,8 @@ export function KanbanCardContent({ task, isOverlay = false, entrance }: KanbanC
           </span>
         </p>
       )}
+
+      {subtaskProgress && subtaskProgress.totalCount > 0 && <KanbanSubtaskProgress subtaskProgress={subtaskProgress} />}
 
       {(task.reviewerName || task.deferralCount > 0 || task.attachments.length > 0) && (
         <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">

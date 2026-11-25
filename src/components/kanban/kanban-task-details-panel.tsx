@@ -26,6 +26,8 @@ import { type ReactNode, useState } from "react";
 import AttachmentPicker from "@/components/attachment-picker";
 import { useCurrentUser } from "@/components/current-user-provider";
 import { useKanbanBoard } from "@/components/kanban/kanban-board-provider";
+import KanbanSubtaskProgress from "@/components/kanban/kanban-subtask-progress";
+import KanbanSubtaskToday from "@/components/kanban/kanban-subtask-today";
 import KanbanTaskActivity from "@/components/kanban/kanban-task-activity";
 import ExpandableContent from "@/components/expandable-content";
 import RichNoteText from "@/components/rich-note-text";
@@ -53,7 +55,7 @@ import { MAX_ATTACHMENT_SIZE_BYTES } from "@/constants/attachments";
 import { KANBAN_COLUMNS } from "@/constants/kanban-columns";
 import { KANBAN_ROLE_DEFINITIONS } from "@/constants/kanban-role-capabilities";
 import { KANBAN_TASK_PRIORITY_OPTIONS } from "@/constants/kanban-task-priorities";
-import { formatEstimatedTurnaround, formatKanbanDate } from "@/lib/kanban";
+import { formatEstimatedTurnaround, formatKanbanDate, getSubtaskProgress } from "@/lib/kanban";
 import { formatAuditLogTimestamp } from "@/lib/kanban-audit-log";
 import { formatFileSize } from "@/lib/kanban-stages";
 import { cn } from "@/lib/utils";
@@ -283,6 +285,7 @@ export default function KanbanTaskDetailsPanel({
                 Add subtask
               </Button>
             </div>
+            {subtasks.length > 0 && <KanbanSubtaskProgress subtaskProgress={getSubtaskProgress(subtasks)} />}
             {subtasks.length === 0 ? (
               <p className="text-sm text-muted-foreground">No subtasks yet.</p>
             ) : (
@@ -306,6 +309,8 @@ export default function KanbanTaskDetailsPanel({
             )}
           </section>
         )}
+
+        {!task.parentTaskId && subtasks.length > 0 && <KanbanSubtaskToday subtasks={subtasks} onOpenTask={onOpenTask} />}
 
         <section aria-label="Update and stage actions" className="flex flex-wrap gap-2">
             {task.status === "working-on-it" && (
@@ -479,7 +484,7 @@ export default function KanbanTaskDetailsPanel({
           />
         </section>
 
-        <KanbanTaskActivity key={task.id} task={task} isOpen={isOpen} />
+        <KanbanTaskActivity key={task.id} task={task} subtasks={subtasks} isOpen={isOpen} onOpenTask={onOpenTask} />
       </div>
     </>
   );
