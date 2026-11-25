@@ -92,7 +92,8 @@ export type DailyTaskDayListProps = {
   today: string;
   day: DailyTaskHistoryDay | undefined;
   isSavingDayOff: boolean;
-  onToggleDayOff: (workday: string, isDayOff: boolean) => void;
+  /** Left out when viewing someone else's history: only the person marks their own days off. */
+  onToggleDayOff?: (workday: string, isDayOff: boolean) => void;
 };
 
 export type DashboardLoadErrorPanelProps = {

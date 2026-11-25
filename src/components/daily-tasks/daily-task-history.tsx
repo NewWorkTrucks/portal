@@ -1,15 +1,19 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, Flame, Lock } from "lucide-react";
+import { ChevronLeft, ChevronRight, Eye, Flame, Lock } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { getMyDailyTaskHistory, setMyDayOff } from "@/api/daily-tasks";
+import { getDailyTaskHistory, getMyDailyTaskHistory, setMyDayOff } from "@/api/daily-tasks";
+import { useCurrentUser } from "@/components/current-user-provider";
 import DailyTaskCalendar from "@/components/daily-tasks/daily-task-calendar";
 import DailyTaskDayList from "@/components/daily-tasks/daily-task-day-list";
 import DashboardLoadErrorPanel from "@/components/dashboard/dashboard-load-error";
 import { useDataMode } from "@/components/data-mode-provider";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import UserAvatar from "@/components/user-avatar";
 import { DAILY_TASK_HISTORY_MONTHS, DAY_OFF_DAYS_AHEAD } from "@/constants/daily-tasks";
 import { buildMockDailyTaskHistory, setMockDayOff } from "@/data/mock-daily-tasks";
+import { getDailyTaskHistoryPeople } from "@/lib/kanban-permissions";
 import { describeRequestError } from "@/lib/request-error";
 import {
   addDaysToIsoDate,
@@ -27,9 +31,13 @@ import type { DailyTaskHistoryLoadState } from "@/types/daily-tasks";
 const STREAK_LOOKBACK_DAYS = 62;
 const MAX_RANGE_DAYS = 93;
 
-/** The person's own Daily Tasks history: a workday calendar, the selected day's list, and days off. */
+/**
+ * A person's Daily Tasks history: a workday calendar, the selected day's list, and days off. Admins
+ * and department heads can switch to the people they manage (US-1.2); days off stay personal.
+ */
 export default function DailyTaskHistory() {
   const { dataMode } = useDataMode();
+  const { currentUser, teamMembers } = useCurrentUser();
 
   // Today, the shown month and the selected day are set after mount: the clock can't be read
   // while the page is prerendered.
@@ -40,6 +48,7 @@ export default function DailyTaskHistory() {
   const [reloadCount, setReloadCount] = useState(0);
   const [isSavingDayOff, setIsSavingDayOff] = useState(false);
   const [dayOffError, setDayOffError] = useState<string | null>(null);
+  const [selectedPersonId, setSelectedPersonId] = useState(currentUser.id);
 
   // The visible month plus enough earlier days to draw the current streak band.
   const loadRange = useMemo(() => {
@@ -60,6 +69,20 @@ export default function DailyTaskHistory() {
       new Map(loadState.status === "ready" ? loadState.history.days.map((historyDay) => [historyDay.workday, historyDay]) : []),
     [loadState],
   );
+  const historyPeople = useMemo(() => getDailyTaskHistoryPeople(currentUser, teamMembers), [currentUser, teamMembers]);
+  const personOptions = useMemo(
+    () =>
+      historyPeople.map((person) => ({
+        value: person.id,
+        label: person.id === currentUser.id ? `${person.name} (you)` : person.name,
+      })),
+    [currentUser.id, historyPeople],
+  );
+  // Falls back to your own history if the picked person is no longer someone you manage.
+  const viewedPerson = historyPeople.find((person) => person.id === selectedPersonId) ?? currentUser;
+  const isViewingOwnHistory = viewedPerson.id === currentUser.id;
+  const viewedPersonId = viewedPerson.id;
+  const viewedPersonName = viewedPerson.name;
   const streakWorkdays = useMemo(
     () => (today ? getCurrentStreakWorkdays(daysByWorkday, today, addDaysToIsoDate(today, -STREAK_LOOKBACK_DAYS)) : new Set<string>()),
     [daysByWorkday, today],
@@ -71,6 +94,14 @@ export default function DailyTaskHistory() {
 
   function handleClickNextMonth() {
     setVisibleMonth((currentMonth) => (currentMonth ? shiftYearMonth(currentMonth, 1) : currentMonth));
+  }
+
+  function handleChangePerson(personId: string | null) {
+    if (personId) {
+      setSelectedPersonId(personId);
+      setDayOffError(null);
+      setLoadState({ status: "loading" });
+    }
   }
 
   function handleClickRetry() {
@@ -113,13 +144,18 @@ export default function DailyTaskHistory() {
         const history =
           dataMode === "mock"
             ? buildMockDailyTaskHistory(range.fromWorkday, range.toWorkday)
-            : await getMyDailyTaskHistory(range.fromWorkday, range.toWorkday);
+            : isViewingOwnHistory
+              ? await getMyDailyTaskHistory(range.fromWorkday, range.toWorkday)
+              : await getDailyTaskHistory(viewedPersonId, range.fromWorkday, range.toWorkday);
         if (!isCancelled) {
           setLoadState({ status: "ready", history });
         }
       } catch (loadError) {
         if (!isCancelled) {
-          setLoadState({ status: "error", error: describeRequestError(loadError, "load your history") });
+          setLoadState({
+            status: "error",
+            error: describeRequestError(loadError, isViewingOwnHistory ? "load your history" : `load ${viewedPersonName}'s history`),
+          });
         }
       }
     }
@@ -127,7 +163,7 @@ export default function DailyTaskHistory() {
     return () => {
       isCancelled = true;
     };
-  }, [dataMode, loadRange, reloadCount]);
+  }, [dataMode, isViewingOwnHistory, loadRange, reloadCount, viewedPersonId, viewedPersonName]);
 
   if (!today || !visibleMonth || !selectedWorkday) {
     return <p className="text-sm text-muted-foreground">Loading your history…</p>;
@@ -143,10 +179,29 @@ export default function DailyTaskHistory() {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <Lock aria-hidden className="size-3.5" />
-          Only you can see this. Admins and Leadership can&rsquo;t.
-        </p>
+        <div className="flex flex-wrap items-center gap-3">
+          {historyPeople.length > 1 && (
+            <Select items={personOptions} value={viewedPerson.id} onValueChange={handleChangePerson}>
+              <SelectTrigger aria-label="Whose history" className="w-56">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {historyPeople.map((person) => (
+                  <SelectItem key={person.id} value={person.id}>
+                    <UserAvatar name={person.name} className="size-5" />
+                    {person.id === currentUser.id ? `${person.name} (you)` : person.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+          <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            {isViewingOwnHistory ? <Lock aria-hidden className="size-3.5" /> : <Eye aria-hidden className="size-3.5" />}
+            {isViewingOwnHistory
+              ? "Only you, your department head and admins can see this."
+              : `Viewing ${viewedPerson.name}'s history. Only they can mark their days off.`}
+          </p>
+        </div>
         {loadState.status === "ready" && (
           <span className="flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-xs font-medium">
             <Flame aria-hidden className="size-3.5 text-primary" />
@@ -201,7 +256,7 @@ export default function DailyTaskHistory() {
             today={today}
             day={daysByWorkday.get(selectedWorkday)}
             isSavingDayOff={isSavingDayOff}
-            onToggleDayOff={handleToggleDayOff}
+            onToggleDayOff={isViewingOwnHistory ? handleToggleDayOff : undefined}
           />
           {dayOffError && (
             <p role="alert" className="text-sm text-destructive">

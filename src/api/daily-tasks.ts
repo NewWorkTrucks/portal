@@ -30,6 +30,26 @@ export async function getMyDailyTaskHistory(fromWorkday: string, toWorkday: stri
   return data as DailyTaskHistory;
 }
 
+/**
+ * Someone's saved Daily Tasks between two workdays (live mode). Allowed for the person, their
+ * department head (reporting line) and admins of a shared business (US-1.2).
+ */
+export async function getDailyTaskHistory(
+  userId: string,
+  fromWorkday: string,
+  toWorkday: string,
+): Promise<DailyTaskHistory> {
+  const { data, error } = await requireSupabase().rpc("kanban_get_daily_task_history", {
+    p_user_id: userId,
+    p_from: fromWorkday,
+    p_to: toWorkday,
+  });
+  if (error) {
+    throw error;
+  }
+  return data as DailyTaskHistory;
+}
+
 /** Marks or unmarks one of the signed-in person's workdays as a day off (live mode). */
 export async function setMyDayOff(workday: string, isDayOff: boolean): Promise<void> {
   const { error } = await requireSupabase().rpc("kanban_set_day_off", {
