@@ -8,13 +8,16 @@ import {
   ChevronUp,
   CircleCheck,
   ClipboardCheck,
+  CornerLeftUp,
   CornerUpLeft,
   Download,
   FileMinus,
   Lock,
+  ListTree,
   MessageSquarePlus,
   Paperclip,
   Pencil,
+  Plus,
   TextCursorInput,
   Timer,
   UserRoundPen,
@@ -61,6 +64,11 @@ type KanbanTaskDetailsPanelProps = {
   task: KanbanTask | null;
   teamMembers: TeamMember[];
   taskActions: KanbanTaskActions;
+  /** The card this one is a subtask of. */
+  parentTask: KanbanTask | null;
+  subtasks: KanbanTask[];
+  onOpenTask: (task: KanbanTask) => void;
+  onClickAddSubtask: (parentTask: KanbanTask) => void;
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
 };
@@ -87,6 +95,10 @@ export default function KanbanTaskDetailsPanel({
   task,
   teamMembers,
   taskActions,
+  parentTask,
+  subtasks,
+  onOpenTask,
+  onClickAddSubtask,
   isOpen,
   onOpenChange,
 }: KanbanTaskDetailsPanelProps) {
@@ -145,6 +157,12 @@ export default function KanbanTaskDetailsPanel({
             <UserAvatar name={task.ownerName} />
             {task.ownerName}
           </DetailRow>
+          {task.assignedByName && (
+            <DetailRow label="Assigned by">
+              <UserAvatar name={task.assignedByName} />
+              {task.assignedByName}
+            </DetailRow>
+          )}
           <DetailRow label="Due date">
             <CalendarDays aria-hidden className="size-3.5 text-muted-foreground" />
             {formatKanbanDate(task.dueDate)}
@@ -227,6 +245,52 @@ export default function KanbanTaskDetailsPanel({
                 className="text-sm"
               />
             </ExpandableContent>
+          </section>
+        )}
+
+        {parentTask && (
+          <section aria-label="Parent card" className="flex flex-col gap-1.5">
+            <h3 className="text-xs text-muted-foreground">Subtask of</h3>
+            <Button variant="outline" className="h-auto justify-start py-2 text-left" onClick={() => onOpenTask(parentTask)}>
+              <CornerLeftUp aria-hidden />
+              <span className="min-w-0 break-words whitespace-normal">{parentTask.title}</span>
+            </Button>
+          </section>
+        )}
+
+        {!task.parentTaskId && (subtasks.length > 0 || taskPermissions.canEdit) && (
+          <section aria-labelledby="task-details-subtasks" className="flex flex-col gap-2">
+            <div className="flex items-center justify-between gap-2">
+              <h3 id="task-details-subtasks" className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <ListTree aria-hidden className="size-3.5" />
+                Subtasks ({subtasks.length})
+              </h3>
+              <Button variant="outline" size="sm" disabled={!taskPermissions.canEdit} onClick={() => onClickAddSubtask(task)}>
+                <Plus aria-hidden />
+                Add subtask
+              </Button>
+            </div>
+            {subtasks.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No subtasks yet.</p>
+            ) : (
+              <ul className="flex flex-col gap-1.5">
+                {subtasks.map((subtask) => (
+                  <li key={subtask.id}>
+                    <button
+                      type="button"
+                      onClick={() => onOpenTask(subtask)}
+                      className="flex w-full items-center gap-2 rounded-md border px-3 py-2 text-left text-sm hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring"
+                    >
+                      <UserAvatar name={subtask.ownerName} className="size-5 shrink-0" />
+                      <span className="min-w-0 flex-1 break-words">{subtask.title}</span>
+                      <span className="shrink-0 text-xs text-muted-foreground">
+                        {KANBAN_COLUMNS.find((kanbanColumn) => kanbanColumn.status === subtask.status)?.title}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
           </section>
         )}
 

@@ -187,6 +187,21 @@ export default function KanbanBoard() {
     [detailsTaskId, tasksByStatus],
   );
 
+  // The open card's parent and subtasks, from the same live lookup.
+  const detailsParentTask = useMemo(
+    () => (detailsTask?.parentTaskId ? (findTaskById(tasksByStatus, detailsTask.parentTaskId) ?? null) : null),
+    [detailsTask, tasksByStatus],
+  );
+  const detailsSubtasks = useMemo(
+    () =>
+      detailsTask
+        ? Object.values(tasksByStatus)
+            .flat()
+            .filter((candidateTask) => candidateTask.parentTaskId === detailsTask.id)
+        : [],
+    [detailsTask, tasksByStatus],
+  );
+
   const dragAnnouncements = useMemo<Announcements>(() => {
     function describeTask(taskId: string | number) {
       return findTaskById(tasksByStatus, String(taskId))?.title ?? "Task";
@@ -371,8 +386,9 @@ export default function KanbanBoard() {
     }
   }
 
+  // A create dialog opened with a card is adding a subtask to that card.
   async function handleSubmitCreateTask(formValues: KanbanTaskFormValues) {
-    await createTask(formValues);
+    await createTask(formValues, dialogTask?.id);
     setOpenDialogKind(null);
   }
 
@@ -506,6 +522,10 @@ export default function KanbanBoard() {
     setIsDetailsPanelOpen(true);
   }
 
+  function handleClickAddSubtask(parentTask: KanbanTask) {
+    openTaskDialog("create", parentTask);
+  }
+
   const kanbanTaskActions: KanbanTaskActions = {
     onOpenDetails: openDetailsPanel,
     onOpenCardActions: openCardActions,
@@ -558,7 +578,7 @@ export default function KanbanBoard() {
     pendingNoteOperation?.kind === "move" || pendingNoteOperation?.kind === "daily-update"
       ? pendingNoteOperation
       : null;
-  // Attaching files to an update follows the card's attachment rule (owner, coordinator, admin).
+  // Attaching files to an update follows the card's attachment rule (owner, department head, admin).
   const canAttachFilesToPendingTask = pendingNoteOperation
     ? getTaskPermissions(pendingNoteOperation.task).canManageAttachments
     : false;
@@ -684,10 +704,15 @@ export default function KanbanBoard() {
         task={detailsTask}
         teamMembers={teamMembers}
         taskActions={detailsPanelTaskActions}
+        parentTask={detailsParentTask}
+        subtasks={detailsSubtasks}
+        onOpenTask={openDetailsPanel}
+        onClickAddSubtask={handleClickAddSubtask}
         isOpen={isDetailsPanelOpen && detailsTask !== null}
         onOpenChange={setIsDetailsPanelOpen}
       />
       <KanbanTaskCreateDialog
+        parentTask={dialogTask}
         mentionables={mentionables}
         teamMembers={teamMembers}
         isOpen={openDialogKind === "create"}

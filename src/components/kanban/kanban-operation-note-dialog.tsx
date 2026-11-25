@@ -29,7 +29,7 @@ type KanbanOperationNoteDialogProps = {
   mentionables: Mentionable[];
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  /** Whether the current user may attach files to this card (owner, coordinator, admin). */
+  /** Whether the current user may attach files to this card (owner, department head, admin). */
   canAttachFiles: boolean;
   onConfirm: (note: string, files: File[]) => void | Promise<void>;
 };

@@ -31,6 +31,8 @@ export type KanbanTaskRow = {
   description: string;
   status: string;
   owner_id: string;
+  assigned_by: string | null;
+  parent_task_id: string | null;
   priority: string;
   due_date: string | null;
   estimated_turnaround_amount: number | null;

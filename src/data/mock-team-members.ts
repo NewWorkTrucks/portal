@@ -6,7 +6,7 @@ import type { TeamMember } from "@/types/team";
 export const MOCK_TEAM_MEMBERS: TeamMember[] = [
   { id: "member-avery", name: "Avery", jobTitle: "Development Lead", role: "admin", businessIds: ["business-nwt", "business-verilot", "business-rwt"] },
   { id: "member-sam", name: "Sam", jobTitle: "Developer", role: "member", businessIds: ["business-nwt"] },
-  { id: "member-morgan", name: "Morgan", jobTitle: "Operations Manager", role: "coordinator", businessIds: ["business-nwt", "business-rwt"] },
+  { id: "member-morgan", name: "Morgan", jobTitle: "Operations Manager", role: "department_head", businessIds: ["business-nwt", "business-rwt"] },
   { id: "member-quinn", name: "Quinn", jobTitle: "Team Member", role: "member", businessIds: ["business-nwt"] },
   { id: "member-rowan", name: "Rowan", jobTitle: "Team Member", role: "member", businessIds: ["business-nwt", "business-verilot"] },
   { id: "member-jordan", name: "Jordan", jobTitle: "Leadership", role: "reviewer", businessIds: ["business-nwt", "business-verilot", "business-rwt"] },

@@ -1,5 +1,5 @@
 /** Portal roles from the user stories (E4-1). */
-export type PortalRole = "member" | "reviewer" | "coordinator" | "admin";
+export type PortalRole = "member" | "reviewer" | "department_head" | "admin";
 
 /** What a role may do on cards it does not own. Every role can always work on its own cards. */
 export type KanbanRoleCapabilities = {

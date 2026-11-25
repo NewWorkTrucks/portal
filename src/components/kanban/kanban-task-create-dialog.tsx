@@ -8,7 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import type { KanbanTaskFormValues } from "@/types/kanban";
+import type { KanbanTask, KanbanTaskFormValues } from "@/types/kanban";
 import type { Mentionable } from "@/types/mention";
 import type { TeamMember } from "@/types/team";
 
@@ -24,6 +24,8 @@ const EMPTY_TASK_FORM_VALUES: KanbanTaskFormValues = {
 };
 
 type KanbanTaskCreateDialogProps = {
+  /** Set when adding a subtask to this card. */
+  parentTask: KanbanTask | null;
   teamMembers: TeamMember[];
   mentionables: Mentionable[];
   isOpen: boolean;
@@ -32,6 +34,7 @@ type KanbanTaskCreateDialogProps = {
 };
 
 export default function KanbanTaskCreateDialog({
+  parentTask,
   teamMembers,
   mentionables,
   isOpen,
@@ -42,9 +45,11 @@ export default function KanbanTaskCreateDialog({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>New task</DialogTitle>
+          <DialogTitle>{parentTask ? "New subtask" : "New task"}</DialogTitle>
           <DialogDescription>
-            A task needs a title and an owner. The rest can be added later.
+            {parentTask
+              ? `A subtask of "${parentTask.title}". It needs a title and an owner.`
+              : "A task needs a title and an owner. The rest can be added later."}
           </DialogDescription>
         </DialogHeader>
 
@@ -52,7 +57,7 @@ export default function KanbanTaskCreateDialog({
           mode="create"
           initialValues={EMPTY_TASK_FORM_VALUES}
           teamMembers={teamMembers}
-          submitLabel="Create task"
+          submitLabel={parentTask ? "Create subtask" : "Create task"}
           onSubmit={onSubmit}
           mentionables={mentionables}
             onCancel={() => onOpenChange(false)}

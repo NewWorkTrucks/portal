@@ -44,6 +44,8 @@ export function toKanbanTask(
     description: taskRow.description,
     status: taskRow.status as KanbanStatus,
     ownerName: nameByUserId.get(taskRow.owner_id) ?? "Unknown",
+    assignedByName: taskRow.assigned_by ? nameByUserId.get(taskRow.assigned_by) : undefined,
+    parentTaskId: taskRow.parent_task_id ?? undefined,
     priority: taskRow.priority as KanbanTaskPriority,
     dueDate: taskRow.due_date,
     estimatedTurnaround:

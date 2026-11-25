@@ -28,8 +28,8 @@ export const KANBAN_ROLE_DEFINITIONS: Record<PortalRole, KanbanRoleDefinition> =
       canArchiveTasks: false,
     },
   },
-  coordinator: {
-    label: "Coordinator",
+  department_head: {
+    label: "Department head",
     description: "Sees and manages every card: move, reassign, edit and archive.",
     capabilities: {
       canEditAnyTask: true,
