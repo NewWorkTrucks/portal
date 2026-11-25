@@ -87,6 +87,30 @@ export function describeRecurrence(rule: KanbanRecurrenceRule, time: string): st
   return `${pattern} at ${formatRecurrenceTime(time)}${ending}`;
 }
 
+/** Whether two repeats are the same rule and time, so an unchanged repeat isn't saved again. */
+export function isSameRecurrence(
+  firstRecurrence: { rule: KanbanRecurrenceRule; time: string } | null | undefined,
+  secondRecurrence: { rule: KanbanRecurrenceRule; time: string } | null | undefined,
+): boolean {
+  if (!firstRecurrence || !secondRecurrence) {
+    return !firstRecurrence && !secondRecurrence;
+  }
+  const normalizeRule = (rule: KanbanRecurrenceRule) =>
+    JSON.stringify({
+      frequency: rule.frequency,
+      interval: rule.interval,
+      weekdays: rule.frequency === "weekly" ? [...(rule.weekdays ?? [])].sort() : null,
+      monthlyBy: rule.frequency === "monthly" ? (rule.monthlyBy ?? "day-of-month") : null,
+      startDate: rule.startDate,
+      endsOn: rule.endsOn ?? null,
+      endsAfterCount: rule.endsAfterCount ?? null,
+    });
+  return (
+    firstRecurrence.time === secondRecurrence.time &&
+    normalizeRule(firstRecurrence.rule) === normalizeRule(secondRecurrence.rule)
+  );
+}
+
 /** The quick choices for a start date, labelled like Google Calendar's repeat menu. */
 export function getRecurrencePresets(startDate: string): KanbanRecurrencePreset[] {
   const weekdayName = getWeekdayName(getIsoWeekday(startDate));

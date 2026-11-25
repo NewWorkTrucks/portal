@@ -1,6 +1,8 @@
 "use client";
 
+import { Repeat2 } from "lucide-react";
 import { type FormEvent, useState } from "react";
+import KanbanRecurrenceDialog from "@/components/kanban/kanban-recurrence-dialog";
 import { Button } from "@/components/ui/button";
 import {
   Field,
@@ -25,6 +27,7 @@ import { KANBAN_TASK_PRIORITY_OPTIONS } from "@/constants/kanban-task-priorities
 import { KANBAN_CREATABLE_STATUSES } from "@/constants/kanban-stages";
 import TurnaroundInput from "@/components/turnaround-input";
 import { parseTurnaroundAmount } from "@/lib/kanban";
+import { describeRecurrence } from "@/lib/kanban-recurrence";
 import { getNoteLengthError } from "@/lib/rich-note";
 import type {
   KanbanStatus,
@@ -67,8 +70,7 @@ function validateKanbanTaskForm(
   turnaroundAmountInput: string,
 ): KanbanTaskFormErrors {
   const formErrors: KanbanTaskFormErrors = {};
-  // A new card only needs a title and an owner; edits also need the schedule and a note (E1-5).
-  const isEditing = mode === "edit";
+  // Creating or editing, a card only needs a title and an owner; everything else is optional.
 
   if (!values.title.trim()) {
     formErrors.title = "Title is required.";
@@ -76,15 +78,9 @@ function validateKanbanTaskForm(
   if (!values.ownerName) {
     formErrors.ownerName = "Choose an owner.";
   }
-  if (isEditing && !values.dueDate) {
-    formErrors.dueDate = "Due date is required.";
-  }
   const isTurnaroundEmpty = !turnaroundAmountInput.trim();
-  if ((isEditing || !isTurnaroundEmpty) && parseTurnaroundAmount(turnaroundAmountInput) === null) {
+  if (!isTurnaroundEmpty && parseTurnaroundAmount(turnaroundAmountInput) === null) {
     formErrors.estimatedTurnaround = "Enter an estimated turnaround greater than 0.";
-  }
-  if (isEditing && !values.note.trim()) {
-    formErrors.note = "A note is required.";
   }
   const noteLengthError = getNoteLengthError(values.note);
   if (noteLengthError) {
@@ -96,9 +92,8 @@ function validateKanbanTaskForm(
 
 /**
  * Create/edit form for a Kanban task. Not tied to a dialog, so it can be reused anywhere.
- * A new card needs only a title and an owner; the description, due date, estimated turnaround
- * and note can be added later. Edits also require the due date, turnaround and a note, which
- * goes into the audit log (E1-2, E1-5, E2-1).
+ * A card needs only a title and an owner, whether it's new or edited; the description, due date,
+ * estimated turnaround, note and repeat are optional. Every edit is still logged (E1-2, E1-5, E2-1).
  */
 export default function KanbanTaskForm({
   mode,
@@ -119,6 +114,7 @@ export default function KanbanTaskForm({
   );
   const [formErrors, setFormErrors] = useState<KanbanTaskFormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isRecurrenceDialogOpen, setIsRecurrenceDialogOpen] = useState(false);
 
   function updateFormValue<FieldName extends keyof KanbanTaskFormValues>(
     fieldName: FieldName,
@@ -155,8 +151,12 @@ export default function KanbanTaskForm({
     }
   }
 
-  const optionalOnCreateLabel =
-    mode === "create" ? <span className="font-normal text-muted-foreground">(optional)</span> : null;
+  function handleSubmitRecurrence(recurrenceValues: KanbanTaskFormValues["recurrence"]) {
+    updateFormValue("recurrence", recurrenceValues ?? undefined);
+    setIsRecurrenceDialogOpen(false);
+  }
+
+  const optionalLabel = <span className="font-normal text-muted-foreground">(optional)</span>;
 
   return (
     <form onSubmit={handleSubmitForm} noValidate className="flex flex-col gap-6">
@@ -267,7 +267,7 @@ export default function KanbanTaskForm({
         <div className="grid grid-cols-2 gap-4">
           <Field data-invalid={Boolean(formErrors.dueDate)}>
             <FieldLabel htmlFor="kanban-task-due-date">
-              Due date {optionalOnCreateLabel}
+              Due date {optionalLabel}
             </FieldLabel>
             <Input
               id="kanban-task-due-date"
@@ -281,7 +281,7 @@ export default function KanbanTaskForm({
 
           <Field data-invalid={Boolean(formErrors.estimatedTurnaround)}>
             <FieldLabel htmlFor="kanban-task-turnaround">
-              Estimated turnaround {optionalOnCreateLabel}
+              Estimated turnaround {optionalLabel}
             </FieldLabel>
             <TurnaroundInput
               id="kanban-task-turnaround"
@@ -303,7 +303,7 @@ export default function KanbanTaskForm({
 
         <Field data-invalid={Boolean(formErrors.note)}>
           <FieldLabel htmlFor="kanban-task-note">
-            {mode === "create" ? <>Note {optionalOnCreateLabel}</> : "What changed and why?"}
+            {mode === "create" ? <>Note {optionalLabel}</> : <>What changed and why? {optionalLabel}</>}
           </FieldLabel>
           <MentionTextarea
             id="kanban-task-note"
@@ -319,10 +319,42 @@ export default function KanbanTaskForm({
             rows={2}
           />
           <FieldDescription>
-            {mode === "create" ? "Type" : "Required. Type"} @ to mention someone. Saved to the audit log
-            and shown on the card.
+            Type @ to mention someone. Saved to the audit log and shown on the card.
           </FieldDescription>
           <FieldError>{formErrors.note}</FieldError>
+        </Field>
+
+        <Field>
+          <FieldLabel htmlFor="kanban-task-repeat">
+            Repeat {optionalLabel}
+          </FieldLabel>
+          <div className="flex flex-wrap items-center gap-3">
+            <Button
+              id="kanban-task-repeat"
+              type="button"
+              variant="outline"
+              onClick={() => setIsRecurrenceDialogOpen(true)}
+            >
+              <Repeat2 aria-hidden />
+              {formValues.recurrence ? "Change repeat" : "Set repeat"}
+            </Button>
+            <span className="text-sm text-muted-foreground">
+              {formValues.recurrence
+                ? `Repeats ${describeRecurrence(formValues.recurrence.rule, formValues.recurrence.time)} (US Central).`
+                : "Doesn\u2019t repeat."}
+            </span>
+          </div>
+          <KanbanRecurrenceDialog
+            taskTitle={formValues.title.trim() || "New task"}
+            initialRecurrence={
+              formValues.recurrence
+                ? { rule: formValues.recurrence.rule, time: formValues.recurrence.time, nextOccurrenceAt: null }
+                : null
+            }
+            isOpen={isRecurrenceDialogOpen}
+            onOpenChange={setIsRecurrenceDialogOpen}
+            onSubmit={handleSubmitRecurrence}
+          />
         </Field>
       </FieldGroup>
 
