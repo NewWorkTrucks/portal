@@ -18,6 +18,7 @@ import {
   Paperclip,
   Pencil,
   Plus,
+  Repeat2,
   TextCursorInput,
   Timer,
   UserRoundPen,
@@ -26,6 +27,7 @@ import { type ReactNode, useState } from "react";
 import AttachmentPicker from "@/components/attachment-picker";
 import { useCurrentUser } from "@/components/current-user-provider";
 import { useKanbanBoard } from "@/components/kanban/kanban-board-provider";
+import KanbanRecurrenceDialog from "@/components/kanban/kanban-recurrence-dialog";
 import KanbanSubtaskProgress from "@/components/kanban/kanban-subtask-progress";
 import KanbanSubtaskToday from "@/components/kanban/kanban-subtask-today";
 import KanbanTaskActivity from "@/components/kanban/kanban-task-activity";
@@ -57,9 +59,12 @@ import { KANBAN_ROLE_DEFINITIONS } from "@/constants/kanban-role-capabilities";
 import { KANBAN_TASK_PRIORITY_OPTIONS } from "@/constants/kanban-task-priorities";
 import { formatEstimatedTurnaround, formatKanbanDate, getSubtaskProgress } from "@/lib/kanban";
 import { formatAuditLogTimestamp } from "@/lib/kanban-audit-log";
+import { describeRecurrence } from "@/lib/kanban-recurrence";
+import { showRequestErrorToast } from "@/lib/toast";
 import { formatFileSize } from "@/lib/kanban-stages";
 import { cn } from "@/lib/utils";
 import type { KanbanTask, KanbanTaskActions } from "@/types/kanban";
+import type { KanbanRecurrenceFormValues } from "@/types/kanban-recurrence";
 
 type KanbanTaskDetailsPanelProps = {
   task: KanbanTask | null;
@@ -101,12 +106,13 @@ export default function KanbanTaskDetailsPanel({
   isOpen,
   onOpenChange,
 }: KanbanTaskDetailsPanelProps) {
-  const { mentionables, getTaskPermissions, assignableTeamMembers } = useKanbanBoard();
+  const { mentionables, getTaskPermissions, assignableTeamMembers, setTaskRecurrence } = useKanbanBoard();
   const { currentUser } = useCurrentUser();
   const isPhoneViewport = useIsPhoneViewport();
 
   // Remembered per card, so opening another card starts with the short list again.
   const [taskIdWithAllAttachmentsShown, setTaskIdWithAllAttachmentsShown] = useState<string | null>(null);
+  const [isRecurrenceDialogOpen, setIsRecurrenceDialogOpen] = useState(false);
 
   const column = task ? KANBAN_COLUMNS.find((kanbanColumn) => kanbanColumn.status === task.status) : undefined;
   const priorityLabel = task
@@ -127,6 +133,18 @@ export default function KanbanTaskDetailsPanel({
       : task.attachments.slice(0, VISIBLE_ATTACHMENT_COUNT)
     : [];
   const hiddenAttachmentCount = task ? task.attachments.length - visibleAttachments.length : 0;
+
+  async function handleSubmitRecurrence(values: KanbanRecurrenceFormValues) {
+    if (!task) {
+      return;
+    }
+    try {
+      await setTaskRecurrence(task, values);
+      setIsRecurrenceDialogOpen(false);
+    } catch (error) {
+      showRequestErrorToast(error, "save the repeat", "Your choices are still in the form.");
+    }
+  }
 
   function handleClickToggleAttachments() {
     setTaskIdWithAllAttachmentsShown((currentTaskId) => (currentTaskId === task?.id ? null : (task?.id ?? null)));
@@ -307,6 +325,42 @@ export default function KanbanTaskDetailsPanel({
                 ))}
               </ul>
             )}
+          </section>
+        )}
+
+        {(task.recurrence || taskPermissions.canEdit) && (
+          <section aria-labelledby="task-details-repeat" className="flex flex-col gap-1.5">
+            <div className="flex items-center justify-between gap-2">
+              <h3 id="task-details-repeat" className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Repeat2 aria-hidden className="size-3.5" />
+                Repeat
+              </h3>
+              {taskPermissions.canEdit && (
+                <Button variant="outline" size="sm" onClick={() => setIsRecurrenceDialogOpen(true)}>
+                  <Repeat2 aria-hidden />
+                  {task.recurrence ? "Change repeat" : "Set repeat"}
+                </Button>
+              )}
+            </div>
+            {task.recurrence ? (
+              <p className="text-sm">
+                Repeats {describeRecurrence(task.recurrence.rule, task.recurrence.time)} (US Central).
+                {task.recurrence.nextOccurrenceAt && (
+                  <span className="block text-xs text-muted-foreground">
+                    Next: {formatAuditLogTimestamp(task.recurrence.nextOccurrenceAt)}
+                  </span>
+                )}
+              </p>
+            ) : (
+              <p className="text-sm text-muted-foreground">Doesn&rsquo;t repeat.</p>
+            )}
+            <KanbanRecurrenceDialog
+              taskTitle={task.title}
+              initialRecurrence={task.recurrence ?? null}
+              isOpen={isRecurrenceDialogOpen}
+              onOpenChange={setIsRecurrenceDialogOpen}
+              onSubmit={handleSubmitRecurrence}
+            />
           </section>
         )}
 

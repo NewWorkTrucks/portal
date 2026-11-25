@@ -63,6 +63,14 @@ export function toKanbanTask(
     dailyUpdateMissedOn: taskRow.daily_update_missed_on ?? undefined,
     reviewerName: taskRow.reviewer_id ? nameByUserId.get(taskRow.reviewer_id) : undefined,
     revisionNotes: taskRow.revision_notes ?? undefined,
+    recurrence:
+      taskRow.recurrence && taskRow.recurrence_time
+        ? {
+            rule: taskRow.recurrence,
+            time: taskRow.recurrence_time.slice(0, 5),
+            nextOccurrenceAt: taskRow.next_occurrence_at,
+          }
+        : undefined,
     waitingDetails:
       taskRow.waiting_on_what && taskRow.waiting_on_who && taskRow.contacted_date
         ? {

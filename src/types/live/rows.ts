@@ -1,3 +1,4 @@
+import type { KanbanRecurrenceRule } from "@/types/kanban-recurrence";
 import type { PortalRole } from "@/types/roles";
 
 // Row shapes returned by Supabase (snake_case, as stored). Mapped to app types in src/lib/live.
@@ -56,6 +57,10 @@ export type KanbanTaskRow = {
   completed_work: string | null;
   outcome: string | null;
   archived_at: string | null;
+  recurrence: KanbanRecurrenceRule | null;
+  /** HH:MM:SS, US Central. */
+  recurrence_time: string | null;
+  next_occurrence_at: string | null;
 };
 
 export type KanbanAttachmentRow = {

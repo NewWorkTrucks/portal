@@ -2,6 +2,7 @@ import type { LucideIcon } from "lucide-react";
 import type { Dispatch, SetStateAction } from "react";
 import type { KanbanAttachment } from "@/types/attachment";
 import type { KanbanAuditLogEntry } from "@/types/audit-log";
+import type { KanbanRecurrence, KanbanRecurrenceFormValues } from "@/types/kanban-recurrence";
 import type {
   KanbanBlockerDetails,
   KanbanCompletionSummary,
@@ -80,6 +81,8 @@ export type KanbanTask = {
   revisitDate?: string;
   /** Done: the closing summary (E2-9). */
   completionSummary?: KanbanCompletionSummary;
+  /** How the card repeats, if it does (US-1.3). */
+  recurrence?: KanbanRecurrence;
 };
 
 /** How far a card's subtasks have got: Done out of all (not archived). */
@@ -195,6 +198,8 @@ export type KanbanBoardContextValue = {
   createTask: (formValues: KanbanTaskFormValues, parentTaskId?: string) => Promise<void>;
   updateTask: (task: KanbanTask, formValues: KanbanTaskFormValues) => Promise<void>;
   renameTask: (task: KanbanTask, title: string, note: string) => Promise<void>;
+  /** Sets, changes or (with null) removes how a card repeats (US-1.3). Heads and admins only. */
+  setTaskRecurrence: (task: KanbanTask, values: KanbanRecurrenceFormValues) => Promise<void>;
   changeTaskOwner: (task: KanbanTask, ownerName: string, note: string) => Promise<void>;
   archiveTask: (task: KanbanTask, note: string) => Promise<void>;
   /**
