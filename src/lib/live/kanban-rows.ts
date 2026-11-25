@@ -62,6 +62,7 @@ export function toKanbanTask(
     lastDailyUpdateAt: taskRow.last_daily_update_at ?? undefined,
     dailyUpdateMissedOn: taskRow.daily_update_missed_on ?? undefined,
     reviewerName: taskRow.reviewer_id ? nameByUserId.get(taskRow.reviewer_id) : undefined,
+    revisionNotes: taskRow.revision_notes ?? undefined,
     waitingDetails:
       taskRow.waiting_on_what && taskRow.waiting_on_who && taskRow.contacted_date
         ? {
