@@ -111,6 +111,17 @@ export function getDailyTaskDayStatus(
 }
 
 /**
+ * Daily updates missed on a past workday (US-1.2): cards in Working on It that got no update by
+ * 6 PM Central. Today is never counted, since its 6 PM may not have passed.
+ */
+export function countMissedDailyUpdates(workday: string, today: string, day: DailyTaskHistoryDay | undefined): number {
+  if (!day || day.isDayOff || workday >= today) {
+    return 0;
+  }
+  return day.items.filter((item) => item.kind === "daily-update" && !item.isDone).length;
+}
+
+/**
  * The workdays in the current streak, for highlighting only (the database owns the count).
  * Walks back from today: all-done days join, nothing-due days, days off and missing days are
  * skipped, and the first partly done day ends it.

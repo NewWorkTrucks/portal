@@ -24,7 +24,11 @@ export default function DailyTaskItemRow({ item, businessName, isToday, nowTimes
         : "Due by 6 PM"
       : isToday
         ? "Due today"
-        : "Not done";
+        : item.kind === "daily-update"
+          ? "Missed: no update by 6 PM"
+          : "Not done";
+  // US-1.2: a past daily update that never came is called out, so the record is easy to spot.
+  const isMissedDailyUpdate = item.kind === "daily-update" && !item.isDone && !isToday;
   const detailText = [
     item.kind === "catch-up" && item.totalCount !== null ? `${item.doneCount ?? 0} of ${item.totalCount} seen` : null,
     businessName,
@@ -55,7 +59,12 @@ export default function DailyTaskItemRow({ item, businessName, isToday, nowTimes
         <span className={cn("break-words", item.isDone && "text-muted-foreground line-through decoration-muted-foreground/50")}>
           {describeDailyTask(item, isToday)}
         </span>
-        <span className="flex items-center gap-1 text-xs text-muted-foreground">
+        <span
+          className={cn(
+            "flex items-center gap-1 text-xs text-muted-foreground",
+            isMissedDailyUpdate && "font-medium text-red-700 dark:text-red-300",
+          )}
+        >
           <KindIcon aria-hidden className="size-3 shrink-0" />
           {detailText}
         </span>
