@@ -50,7 +50,7 @@ import {
 } from "@/lib/kanban";
 import { celebrateCardDone } from "@/lib/confetti";
 import { filterKanbanTasksByStatus } from "@/lib/kanban-filters";
-import { getTaskReviewerName } from "@/lib/kanban-permissions";
+import { getTaskReviewerName, isTaskPartOfUsersWork } from "@/lib/kanban-permissions";
 import type { KanbanAttachment } from "@/types/attachment";
 import type { KanbanTaskFilters } from "@/types/kanban-filters";
 import type { KanbanDailyUpdate, KanbanStageTransition } from "@/types/kanban-stages";
@@ -88,6 +88,7 @@ export default function KanbanBoard() {
     mentionables,
     tasksByStatus,
     allTasksByStatus,
+    auditLogEntries,
     setTasksByStatus,
     createTask,
     updateTask,
@@ -105,7 +106,7 @@ export default function KanbanBoard() {
     getMoveDeniedReason,
   } = useKanbanBoard();
   const { currentUser } = useCurrentUser();
-  const { isDoneColumnHidden, isLowSpecModeOn } = useDevicePreferences();
+  const { isDoneColumnHidden, isLowSpecModeOn, boardCardScope } = useDevicePreferences();
   const dndContextId = useId();
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: POINTER_ACTIVATION_DISTANCE_PX } }),
@@ -149,10 +150,31 @@ export default function KanbanBoard() {
     [cardActionsTaskId, tasksByStatus],
   );
 
+  // G13: members always, and heads who pick "My cards", see only their own work. The database
+  // already hides other cards from members; this mirrors it for mock mode and "viewing as".
+  const isShowingOnlyMyCards =
+    !KANBAN_ROLE_DEFINITIONS[currentUser.role].capabilities.canViewAllCards || boardCardScope === "mine";
+  const myWorkTasksByStatus = useMemo(() => {
+    if (!isShowingOnlyMyCards) {
+      return tasksByStatus;
+    }
+    const allTasks = Object.values(tasksByStatus).flat();
+    const mentionedTaskIds = new Set(
+      auditLogEntries
+        .filter((auditLogEntry) => auditLogEntry.mentionedNames.includes(currentUser.name))
+        .map((auditLogEntry) => auditLogEntry.taskId),
+    );
+    return Object.fromEntries(
+      Object.entries(tasksByStatus).map(([status, tasks]) => [
+        status,
+        tasks.filter((task) => isTaskPartOfUsersWork(task, currentUser, allTasks, mentionedTaskIds, teamMembers)),
+      ]),
+    ) as KanbanTasksByStatus;
+  }, [auditLogEntries, currentUser, isShowingOnlyMyCards, tasksByStatus, teamMembers]);
   // E1-6: only matching cards are shown; dragging and saving still work on the full board.
   const visibleTasksByStatus = useMemo(
-    () => filterKanbanTasksByStatus(tasksByStatus, taskFilters),
-    [tasksByStatus, taskFilters],
+    () => filterKanbanTasksByStatus(myWorkTasksByStatus, taskFilters),
+    [myWorkTasksByStatus, taskFilters],
   );
   const visibleColumns = useMemo(
     () =>

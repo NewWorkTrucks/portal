@@ -32,6 +32,28 @@ export function getTaskReviewerName(task: KanbanTask, teamMembers: TeamMember[])
 }
 
 /**
+ * Whether `task` is part of `user`'s own work (G13, US-3.6): they own it, gave it out or review it,
+ * it is the parent of a subtask they own, or they were @mentioned on it. Mirrors
+ * kanban_private.can_see_task, which shows members only these cards.
+ */
+export function isTaskPartOfUsersWork(
+  task: KanbanTask,
+  user: TeamMember,
+  allTasks: readonly KanbanTask[],
+  mentionedTaskIds: ReadonlySet<string>,
+  teamMembers: TeamMember[],
+): boolean {
+  return (
+    task.ownerName === user.name ||
+    task.assignedByName === user.name ||
+    task.reviewerName === user.name ||
+    getTaskReviewerName(task, teamMembers) === user.name ||
+    allTasks.some((otherTask) => otherTask.parentTaskId === task.id && otherTask.ownerName === user.name) ||
+    mentionedTaskIds.has(task.id)
+  );
+}
+
+/**
  * Whether `person` is `manager` or anyone below them in the reporting chain (G6, US-3.5).
  * Mirrors kanban_private.is_in_reporting_line. `everyone` is used to walk up the chain.
  */

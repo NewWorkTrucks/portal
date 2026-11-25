@@ -4,6 +4,7 @@ import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } fro
 import { useCurrentUser } from "@/components/current-user-provider";
 import { KanbanBoardContext } from "@/components/kanban/kanban-board-provider";
 import { MAX_ATTACHMENT_SIZE_BYTES } from "@/constants/attachments";
+import { useBoardBusinesses } from "@/hooks/use-board-businesses";
 import { findStatusOfDraggable, findTaskById, groupTasksByStatus } from "@/lib/kanban";
 import {
   getAssignableTeamMembers,
@@ -42,6 +43,7 @@ import type { MentionGroup } from "@/types/mention";
 
 const ATTACHMENT_BUCKET = "kanban-attachments";
 const ATTACHMENT_URL_LIFETIME_SECONDS = 60 * 60;
+/** Per business on the board, so "All businesses" keeps the same history depth. */
 const ACTIVITY_LOAD_LIMIT = 500;
 // Coalesces bursts of realtime events (one save touches the card and the activity log).
 const REALTIME_RELOAD_DELAY_MS = 300;
@@ -61,6 +63,7 @@ function toSafeFileName(fileName: string): string {
  */
 export default function LiveKanbanBoardProvider({ children }: LiveKanbanBoardProviderProps) {
   const { teamMembers, currentUser, currentBusiness } = useCurrentUser();
+  const boardBusinesses = useBoardBusinesses();
   const supabase = getSupabaseBrowserClient();
 
   const [tasksByStatus, setTasksByStatus] = useState<KanbanTasksByStatus>(() => groupTasksByStatus([]));
@@ -86,25 +89,29 @@ export default function LiveKanbanBoardProvider({ children }: LiveKanbanBoardPro
     [teamMembers, mentionGroups],
   );
 
+  // A string, so the loader and realtime only restart when the set of businesses really changes.
+  const boardBusinessIdsKey = boardBusinesses.map((boardBusiness) => boardBusiness.id).join(",");
+
   const loadBoard = useCallback(async () => {
     if (!supabase) {
       return;
     }
 
     const businessId = currentBusiness.id;
+    const boardBusinessIds = boardBusinessIdsKey.split(",");
     const [tasksResult, activityResult, attachmentsResult, groupsResult, groupMembersResult] =
       await Promise.all([
-        supabase.from("kanban_tasks").select("*").eq("business_id", businessId).order("position"),
+        supabase.from("kanban_tasks").select("*").in("business_id", boardBusinessIds).order("position"),
         supabase
           .from("kanban_activity")
           .select("*")
-          .eq("business_id", businessId)
+          .in("business_id", boardBusinessIds)
           .order("occurred_at", { ascending: false })
-          .limit(ACTIVITY_LOAD_LIMIT),
+          .limit(ACTIVITY_LOAD_LIMIT * boardBusinessIds.length),
         supabase
           .from("kanban_attachments")
           .select("*")
-          .eq("business_id", businessId)
+          .in("business_id", boardBusinessIds)
           .is("removed_at", null)
           .order("uploaded_at", { ascending: false }),
         supabase.from("mention_groups").select("id, handle, label").eq("business_id", businessId),
@@ -167,7 +174,7 @@ export default function LiveKanbanBoardProvider({ children }: LiveKanbanBoardPro
           .filter((name): name is string => Boolean(name)),
       })),
     );
-  }, [supabase, currentBusiness.id, nameByUserId]);
+  }, [supabase, currentBusiness.id, boardBusinessIdsKey, nameByUserId]);
 
   function showOversizedFileToast(fileName: string) {
     showErrorToast(`${fileName} is too large`, {
@@ -433,9 +440,9 @@ export default function LiveKanbanBoardProvider({ children }: LiveKanbanBoardPro
       reloadTimeoutRef.current = window.setTimeout(() => void loadBoard(), REALTIME_RELOAD_DELAY_MS);
     }
 
-    const businessFilter = `business_id=eq.${currentBusiness.id}`;
+    const businessFilter = `business_id=in.(${boardBusinessIdsKey})`;
     const realtimeChannel = supabase
-      .channel(`kanban-board-${currentBusiness.id}`)
+      .channel(`kanban-board-${boardBusinessIdsKey}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "kanban_tasks", filter: businessFilter }, scheduleReload)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "kanban_activity", filter: businessFilter }, scheduleReload)
       .subscribe();
@@ -446,7 +453,7 @@ export default function LiveKanbanBoardProvider({ children }: LiveKanbanBoardPro
       }
       void supabase.removeChannel(realtimeChannel);
     };
-  }, [supabase, currentBusiness.id, loadBoard]);
+  }, [supabase, boardBusinessIdsKey, loadBoard]);
 
   return (
     <KanbanBoardContext.Provider
@@ -455,7 +462,7 @@ export default function LiveKanbanBoardProvider({ children }: LiveKanbanBoardPro
         assignableTeamMembers,
         mentionables,
         tasksByStatus,
-        // Only the current business is loaded, so a drag snapshot of it is the full state.
+        // Only the board's businesses are loaded, so a drag snapshot of them is the full state.
         allTasksByStatus: tasksByStatus,
         archivedTasks,
         auditLogEntries,
