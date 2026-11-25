@@ -1,9 +1,9 @@
 "use client";
 
-import { Check, CircleDashed, Minus, Moon } from "lucide-react";
+import { Check, CircleDashed, ClockAlert, Minus, Moon } from "lucide-react";
 import { type KeyboardEvent, useRef } from "react";
 import { formatWorkday } from "@/lib/dashboard";
-import { getDailyTaskDayStatus, getMonthWorkdayWeeks } from "@/lib/daily-tasks";
+import { countMissedDailyUpdates, getDailyTaskDayStatus, getMonthWorkdayWeeks } from "@/lib/daily-tasks";
 import { cn } from "@/lib/utils";
 import type { DailyTaskCalendarProps, DailyTaskDayStatus } from "@/types/daily-tasks";
 
@@ -87,6 +87,12 @@ export default function DailyTaskCalendar({
               const isInStreak = streakWorkdays.has(workday);
               const countText =
                 day?.totalCount && day.totalCount > 0 && !day.isDayOff ? `, ${day.doneCount} of ${day.totalCount} done` : "";
+              // US-1.2: a record of missed daily updates, not a deadline.
+              const missedUpdateCount = countMissedDailyUpdates(workday, today, day);
+              const missedUpdateText =
+                missedUpdateCount === 0
+                  ? ""
+                  : `, ${missedUpdateCount} daily ${missedUpdateCount === 1 ? "update" : "updates"} missed`;
 
               return (
                 <span key={workday} role="gridcell" className="relative">
@@ -104,7 +110,7 @@ export default function DailyTaskCalendar({
                     type="button"
                     tabIndex={workday === focusableWorkday ? 0 : -1}
                     aria-pressed={isSelected}
-                    aria-label={`${formatWorkday(workday)}: ${label}${countText}${isInStreak ? ", in your current streak" : ""}${workday === today ? ", today" : ""}`}
+                    aria-label={`${formatWorkday(workday)}: ${label}${countText}${missedUpdateText}${isInStreak ? ", in your current streak" : ""}${workday === today ? ", today" : ""}`}
                     onClick={() => onSelectWorkday(workday)}
                     className={cn(
                       "relative flex aspect-square w-full flex-col items-center justify-center gap-0.5 rounded-md text-sm tabular-nums transition-colors hover:ring-1 hover:ring-ring/50 focus-visible:outline-2 focus-visible:outline-ring sm:aspect-[4/3]",
@@ -115,6 +121,15 @@ export default function DailyTaskCalendar({
                   >
                     {Number(workday.slice(8))}
                     <DayStatusSymbol status={status} />
+                    {missedUpdateCount > 0 && (
+                      <span
+                        aria-hidden
+                        className="absolute top-0.5 right-0.5 flex items-center gap-0.5 rounded-full bg-red-100 px-1 text-[10px] leading-4 font-semibold text-red-900 dark:bg-red-500/20 dark:text-red-300"
+                      >
+                        <ClockAlert className="size-2.5" />
+                        {missedUpdateCount}
+                      </span>
+                    )}
                   </button>
                 </span>
               );
@@ -132,6 +147,10 @@ export default function DailyTaskCalendar({
         <li className="flex items-center gap-1">
           <span aria-hidden className="h-1 w-4 rounded-full bg-primary/50" />
           Current streak
+        </li>
+        <li className="flex items-center gap-1">
+          <ClockAlert aria-hidden className="size-3.5 text-red-700 dark:text-red-300" />
+          Missed daily update
         </li>
       </ul>
     </div>
