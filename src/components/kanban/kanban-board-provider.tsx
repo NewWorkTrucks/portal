@@ -34,6 +34,7 @@ import { createAuditLogEntry, describeTaskEdits } from "@/lib/kanban-audit-log";
 import {
   assertKanbanPermission,
   getKanbanTaskPermissions,
+  getAssignableTeamMembers,
   getTaskMoveDeniedReason,
 } from "@/lib/kanban-permissions";
 import {
@@ -95,6 +96,10 @@ export function KanbanBoardProvider({ initialTasks, children }: KanbanBoardProvi
   const teamMembers = useMemo(
     () => allTeamMembers.filter((teamMember) => teamMember.businessIds.includes(currentBusiness.id)),
     [allTeamMembers, currentBusiness.id],
+  );
+  const assignableTeamMembers = useMemo(
+    () => getAssignableTeamMembers(currentUser, teamMembers, allTeamMembers),
+    [currentUser, teamMembers, allTeamMembers],
   );
   const businessTasksByStatus = useMemo(
     () =>
@@ -205,7 +210,7 @@ export function KanbanBoardProvider({ initialTasks, children }: KanbanBoardProvi
   }
 
   function getTaskPermissions(task: KanbanTask) {
-    return getKanbanTaskPermissions(currentUser, task);
+    return getKanbanTaskPermissions(currentUser, task, allTeamMembers);
   }
 
   function getMoveDeniedReason(task: KanbanTask, newStatus: KanbanStatus) {
@@ -457,6 +462,7 @@ export function KanbanBoardProvider({ initialTasks, children }: KanbanBoardProvi
     <KanbanBoardContext.Provider
       value={{
         teamMembers,
+        assignableTeamMembers,
         mentionables,
         tasksByStatus: businessTasksByStatus,
         allTasksByStatus: tasksByStatus,

@@ -5,7 +5,11 @@ import { useCurrentUser } from "@/components/current-user-provider";
 import { KanbanBoardContext } from "@/components/kanban/kanban-board-provider";
 import { MAX_ATTACHMENT_SIZE_BYTES } from "@/constants/attachments";
 import { findStatusOfDraggable, findTaskById, groupTasksByStatus } from "@/lib/kanban";
-import { getKanbanTaskPermissions, getTaskMoveDeniedReason } from "@/lib/kanban-permissions";
+import {
+  getAssignableTeamMembers,
+  getKanbanTaskPermissions,
+  getTaskMoveDeniedReason,
+} from "@/lib/kanban-permissions";
 import { describeDailyUpdate, describeStageTransition, formatFileSize } from "@/lib/kanban-stages";
 import {
   getPositionBetweenNeighbors,
@@ -72,6 +76,10 @@ export default function LiveKanbanBoardProvider({ children }: LiveKanbanBoardPro
   const userIdByName = useMemo(
     () => new Map(teamMembers.map((teamMember) => [teamMember.name, teamMember.id])),
     [teamMembers],
+  );
+  const assignableTeamMembers = useMemo(
+    () => getAssignableTeamMembers(currentUser, teamMembers, teamMembers),
+    [currentUser, teamMembers],
   );
   const mentionables = useMemo(
     () => buildMentionables(teamMembers, mentionGroups),
@@ -444,6 +452,7 @@ export default function LiveKanbanBoardProvider({ children }: LiveKanbanBoardPro
     <KanbanBoardContext.Provider
       value={{
         teamMembers,
+        assignableTeamMembers,
         mentionables,
         tasksByStatus,
         // Only the current business is loaded, so a drag snapshot of it is the full state.
@@ -463,7 +472,7 @@ export default function LiveKanbanBoardProvider({ children }: LiveKanbanBoardPro
         addUpdateComment,
         attachFiles,
         removeAttachment,
-        getTaskPermissions: (task) => getKanbanTaskPermissions(currentUser, task),
+        getTaskPermissions: (task) => getKanbanTaskPermissions(currentUser, task, teamMembers),
         getMoveDeniedReason: (task, newStatus) => getTaskMoveDeniedReason(currentUser, task, newStatus, teamMembers),
       }}
     >

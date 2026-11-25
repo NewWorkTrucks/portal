@@ -58,11 +58,9 @@ import { formatAuditLogTimestamp } from "@/lib/kanban-audit-log";
 import { formatFileSize } from "@/lib/kanban-stages";
 import { cn } from "@/lib/utils";
 import type { KanbanTask, KanbanTaskActions } from "@/types/kanban";
-import type { TeamMember } from "@/types/team";
 
 type KanbanTaskDetailsPanelProps = {
   task: KanbanTask | null;
-  teamMembers: TeamMember[];
   taskActions: KanbanTaskActions;
   /** The card this one is a subtask of. */
   parentTask: KanbanTask | null;
@@ -93,7 +91,6 @@ function DetailRow({ label, children }: DetailRowProps) {
 /** Side panel opened by clicking a card: full details, actions for the current role, and the card's own activity. */
 export default function KanbanTaskDetailsPanel({
   task,
-  teamMembers,
   taskActions,
   parentTask,
   subtasks,
@@ -102,7 +99,7 @@ export default function KanbanTaskDetailsPanel({
   isOpen,
   onOpenChange,
 }: KanbanTaskDetailsPanelProps) {
-  const { mentionables, getTaskPermissions } = useKanbanBoard();
+  const { mentionables, getTaskPermissions, assignableTeamMembers } = useKanbanBoard();
   const { currentUser } = useCurrentUser();
   const isPhoneViewport = useIsPhoneViewport();
 
@@ -388,7 +385,7 @@ export default function KanbanTaskDetailsPanel({
                       taskActions.onSelectOwner(task, ownerName)
                     }
                   >
-                    {teamMembers.map((teamMember) => (
+                    {assignableTeamMembers.map((teamMember) => (
                       <DropdownMenuRadioItem
                         key={teamMember.id}
                         value={teamMember.name}

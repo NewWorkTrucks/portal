@@ -19,7 +19,7 @@ import type { KanbanTaskListProps, KanbanTaskMenuProps } from "@/types/kanban";
 const EMPTY_CELL_LABEL = "None";
 const TABLE_HEADINGS = ["Task", "Stage", "Owner", "Priority", "Due", "Follow-up", "Turnaround", "Latest note"];
 
-function KanbanTaskListRow({ task, teamMembers, taskActions }: KanbanTaskMenuProps) {
+function KanbanTaskListRow({ task, taskActions }: KanbanTaskMenuProps) {
   const { mentionables } = useKanbanBoard();
   const { currentUser } = useCurrentUser();
 
@@ -106,13 +106,13 @@ function KanbanTaskListRow({ task, teamMembers, taskActions }: KanbanTaskMenuPro
           </Button>
         </td>
       </ContextMenuTrigger>
-      <KanbanTaskContextMenuContent task={task} teamMembers={teamMembers} taskActions={taskActions} />
+      <KanbanTaskContextMenuContent task={task} taskActions={taskActions} />
     </ContextMenu>
   );
 }
 
 /** Every visible task as a table, in stage order. Uses the board's filters, permissions and dialogs. */
-export default function KanbanTaskList({ tasks, totalTaskCount, teamMembers, taskActions }: KanbanTaskListProps) {
+export default function KanbanTaskList({ tasks, totalTaskCount, taskActions }: KanbanTaskListProps) {
   if (tasks.length === 0) {
     return (
       <div className="px-4 pb-6 sm:px-6">
@@ -142,7 +142,7 @@ export default function KanbanTaskList({ tasks, totalTaskCount, teamMembers, tas
           </thead>
           <tbody className="divide-y">
             {tasks.map((task) => (
-              <KanbanTaskListRow key={task.id} task={task} teamMembers={teamMembers} taskActions={taskActions} />
+              <KanbanTaskListRow key={task.id} task={task} taskActions={taskActions} />
             ))}
           </tbody>
         </table>

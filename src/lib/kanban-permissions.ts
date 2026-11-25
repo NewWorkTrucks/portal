@@ -8,6 +8,11 @@ function isTaskOwner(user: TeamMember, task: KanbanTask): boolean {
   return task.ownerName === user.name;
 }
 
+function isOwnerInReportingLine(user: TeamMember, task: KanbanTask, everyone: TeamMember[]): boolean {
+  const owner = everyone.find((teamMember) => teamMember.name === task.ownerName);
+  return owner ? isInReportingLine(user, owner, everyone) : false;
+}
+
 /**
  * Who reviews `task` when it's submitted (US-4.2): whoever assigned it, unless they gave it to
  * themselves, then the person the owner reports to. Null at the top of the chain, where nobody is
@@ -26,7 +31,38 @@ export function getTaskReviewerName(task: KanbanTask, teamMembers: TeamMember[])
   return ownerManager?.name ?? null;
 }
 
-export function getKanbanTaskPermissions(user: TeamMember, task: KanbanTask): KanbanTaskPermissions {
+/**
+ * Whether `person` is `manager` or anyone below them in the reporting chain (G6, US-3.5).
+ * Mirrors kanban_private.is_in_reporting_line. `everyone` is used to walk up the chain.
+ */
+export function isInReportingLine(manager: TeamMember, person: TeamMember, everyone: TeamMember[]): boolean {
+  const visitedIds = new Set<string>();
+  let currentPerson: TeamMember | undefined = person;
+  while (currentPerson && !visitedIds.has(currentPerson.id)) {
+    if (currentPerson.id === manager.id) {
+      return true;
+    }
+    visitedIds.add(currentPerson.id);
+    const managerId: string | undefined = currentPerson.reportsToId;
+    currentPerson = everyone.find((teamMember) => teamMember.id === managerId);
+  }
+  return false;
+}
+
+/** Who `user` may give a card to: themselves and the people who report to them (G6, US-3.5). */
+export function getAssignableTeamMembers(
+  user: TeamMember,
+  candidates: TeamMember[],
+  everyone: TeamMember[],
+): TeamMember[] {
+  return candidates.filter((candidate) => isInReportingLine(user, candidate, everyone));
+}
+
+export function getKanbanTaskPermissions(
+  user: TeamMember,
+  task: KanbanTask,
+  everyone: TeamMember[],
+): KanbanTaskPermissions {
   const capabilities = KANBAN_ROLE_DEFINITIONS[user.role].capabilities;
   const isOwner = isTaskOwner(user, task);
   // US-3.4: only department heads and admins edit cards; members work on the ones they're given.
@@ -37,7 +73,9 @@ export function getKanbanTaskPermissions(user: TeamMember, task: KanbanTask): Ka
   return {
     canEdit,
     canRename: canEdit,
-    canChangeOwner: capabilities.canReassignAnyTask,
+    // G6: only cards held by you or people who report to you can be handed on.
+    canChangeOwner:
+      capabilities.canReassignAnyTask && isOwnerInReportingLine(user, task, everyone),
     canArchive: capabilities.canArchiveTasks,
     canMove: isOwner || capabilities.canMoveAnyTask || isReviewer,
     canPostDailyUpdate: task.status === "working-on-it" && (isOwner || canEdit),
@@ -56,7 +94,7 @@ export function getTaskMoveDeniedReason(
   newStatus: KanbanStatus,
   teamMembers: TeamMember[],
 ): string | null {
-  const taskPermissions = getKanbanTaskPermissions(user, task);
+  const taskPermissions = getKanbanTaskPermissions(user, task, teamMembers);
 
   if (!taskPermissions.canMove) {
     return "You can only move your own cards.";

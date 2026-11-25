@@ -30,8 +30,8 @@ import { KANBAN_ROLE_DEFINITIONS } from "@/constants/kanban-role-capabilities";
 import type { KanbanTaskMenuProps } from "@/types/kanban";
 
 /** The right-click menu for a task, shared by board cards and list rows. */
-export default function KanbanTaskContextMenuContent({ task, teamMembers, taskActions }: KanbanTaskMenuProps) {
-  const { getTaskPermissions } = useKanbanBoard();
+export default function KanbanTaskContextMenuContent({ task, taskActions }: KanbanTaskMenuProps) {
+  const { getTaskPermissions, assignableTeamMembers } = useKanbanBoard();
   const { currentUser } = useCurrentUser();
 
   const taskPermissions = getTaskPermissions(task);
@@ -61,7 +61,7 @@ export default function KanbanTaskContextMenuContent({ task, teamMembers, taskAc
               value={task.ownerName}
               onValueChange={(ownerName: string) => taskActions.onSelectOwner(task, ownerName)}
             >
-              {teamMembers.map((teamMember) => (
+              {assignableTeamMembers.map((teamMember) => (
                 <ContextMenuRadioItem key={teamMember.id} value={teamMember.name}>
                   <UserAvatar name={teamMember.name} className="size-5" />
                   {teamMember.name}
