@@ -19,6 +19,7 @@ import {
   toKanbanTask,
   toTransitionDetails,
 } from "@/lib/live/kanban-rows";
+import { describeRecurrence } from "@/lib/kanban-recurrence";
 import { buildMentionables, resolveMentionedNames } from "@/lib/mentions";
 import { showErrorToast, showRequestErrorToast } from "@/lib/toast";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
@@ -31,6 +32,7 @@ import type {
   KanbanTaskFormValues,
   KanbanTasksByStatus,
 } from "@/types/kanban";
+import type { KanbanRecurrenceFormValues } from "@/types/kanban-recurrence";
 import type { KanbanDailyUpdate, KanbanStageTransition } from "@/types/kanban-stages";
 import type {
   KanbanActivityRow,
@@ -280,6 +282,15 @@ export default function LiveKanbanBoardProvider({ children }: LiveKanbanBoardPro
     });
   }
 
+  async function setTaskRecurrence(task: KanbanTask, values: KanbanRecurrenceFormValues) {
+    await callKanbanFunction("kanban_set_task_recurrence", {
+      p_task_id: task.id,
+      p_recurrence: values?.rule ?? null,
+      p_time: values?.time ?? null,
+      p_description: values ? describeRecurrence(values.rule, values.time) : null,
+    });
+  }
+
   async function changeTaskOwner(task: KanbanTask, ownerName: string, note: string) {
     await callKanbanFunction("kanban_change_task_owner", {
       p_task_id: task.id,
@@ -470,6 +481,7 @@ export default function LiveKanbanBoardProvider({ children }: LiveKanbanBoardPro
         createTask,
         updateTask,
         renameTask,
+        setTaskRecurrence,
         changeTaskOwner,
         archiveTask,
         transitionTask,

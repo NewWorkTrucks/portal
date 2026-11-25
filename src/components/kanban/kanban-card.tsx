@@ -12,6 +12,7 @@ import {
   BellRing,
   Paperclip,
   Repeat,
+  Repeat2,
   CalendarDays,
   MessageSquareText,
   Timer,
@@ -29,6 +30,7 @@ import { KANBAN_PRIORITY_BADGE_CLASS_NAMES } from "@/constants/kanban-task-prior
 import { useBoardBusinesses } from "@/hooks/use-board-businesses";
 import { cn } from "@/lib/utils";
 import { findSubtasksOf, formatEstimatedTurnaround, formatKanbanDate, getSubtaskProgress } from "@/lib/kanban";
+import { describeRecurrence } from "@/lib/kanban-recurrence";
 import type { KanbanTask, KanbanTaskActions } from "@/types/kanban";
 import type { KanbanEntrance } from "@/types/kanban-entrance";
 
@@ -163,12 +165,21 @@ export function KanbanCardContent({ task, isOverlay = false, entrance }: KanbanC
 
       {subtaskProgress && subtaskProgress.totalCount > 0 && <KanbanSubtaskProgress subtaskProgress={subtaskProgress} />}
 
-      {(task.reviewerName || task.deferralCount > 0 || task.attachments.length > 0) && (
+      {(task.reviewerName || task.deferralCount > 0 || task.attachments.length > 0 || task.recurrence) && (
         <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
           {task.status === "needs-review" && task.reviewerName && (
             <span className="flex items-center gap-1">
               <Eye aria-hidden className="size-3" />
               Reviewer: {task.reviewerName}
+            </span>
+          )}
+          {task.recurrence && (
+            <span
+              className="flex items-center gap-1"
+              title={`Repeats ${describeRecurrence(task.recurrence.rule, task.recurrence.time)} (US Central)`}
+            >
+              <Repeat2 aria-hidden className="size-3" />
+              Repeats
             </span>
           )}
           {task.deferralCount > 0 && (

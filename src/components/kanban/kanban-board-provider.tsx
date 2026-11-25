@@ -44,6 +44,7 @@ import {
   getStageTaskChanges,
 } from "@/lib/kanban-stages";
 import { useBoardBusinesses } from "@/hooks/use-board-businesses";
+import { describeRecurrence } from "@/lib/kanban-recurrence";
 import { buildMentionables, resolveMentionedNames } from "@/lib/mentions";
 import type { KanbanAttachment } from "@/types/attachment";
 import type { KanbanAuditLogAction, KanbanAuditLogEntry } from "@/types/audit-log";
@@ -56,6 +57,7 @@ import type {
   KanbanTaskFormValues,
   KanbanTasksByStatus,
 } from "@/types/kanban";
+import type { KanbanRecurrenceFormValues } from "@/types/kanban-recurrence";
 import type { KanbanDailyUpdate, KanbanStageTransition } from "@/types/kanban-stages";
 
 /** Logged for a card created without a note; matches the database's kanban_create_task. */
@@ -270,6 +272,23 @@ export function KanbanBoardProvider({ initialTasks, children }: KanbanBoardProvi
     await recordAuditLogEntry({ id: task.id, title, businessId: task.businessId }, "renamed", `Renamed from “${task.title}”`, note);
   }
 
+  // Mock mode only keeps the rule; the database works out when the card comes back.
+  async function setTaskRecurrence(task: KanbanTask, values: KanbanRecurrenceFormValues) {
+    assertTaskInCurrentBusiness(task);
+    assertKanbanPermission(getTaskPermissions(task).canEdit, "Only department heads and admins can change how a card repeats.");
+    setTasksByStatus((previousTasksByStatus) =>
+      updateTaskById(previousTasksByStatus, task.id, {
+        recurrence: values ? { rule: values.rule, time: values.time, nextOccurrenceAt: null } : undefined,
+      }),
+    );
+    await recordAuditLogEntry(
+      task,
+      "edited",
+      values ? "Repeat set" : "Repeat removed",
+      values ? `Repeats ${describeRecurrence(values.rule, values.time)}.` : "This card no longer repeats.",
+    );
+  }
+
   async function changeTaskOwner(task: KanbanTask, ownerName: string, note: string) {
     assertTaskInCurrentBusiness(task);
     if (task.ownerName === ownerName) {
@@ -482,6 +501,7 @@ export function KanbanBoardProvider({ initialTasks, children }: KanbanBoardProvi
         createTask,
         updateTask,
         renameTask,
+        setTaskRecurrence,
         changeTaskOwner,
         archiveTask,
         transitionTask,
