@@ -5,6 +5,7 @@ import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { Lock } from "lucide-react";
 import { type CSSProperties, useMemo } from "react";
 import KanbanCard from "@/components/kanban/kanban-card";
+import KanbanReviewQueue from "@/components/kanban/kanban-review-queue";
 import { cn } from "@/lib/utils";
 import type { KanbanColumnDefinition, KanbanTask, KanbanTaskActions } from "@/types/kanban";
 
@@ -18,6 +19,8 @@ type KanbanColumnProps = {
   dropBlockedReason?: string | null;
   /** This column's place in the board's first-load entrance. Undefined once the entrance is over. */
   entranceColumnIndex?: number;
+  /** Working on It only: cards waiting for the current user's review, pinned on top (US-4.2). */
+  reviewQueueTasks?: readonly KanbanTask[];
 };
 
 /** Long columns shouldn't make the last cards wait; they all join in after this many. */
@@ -30,6 +33,7 @@ export default function KanbanColumn({
   taskActions,
   dropBlockedReason,
   entranceColumnIndex,
+  reviewQueueTasks = [],
 }: KanbanColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id: column.status });
 
@@ -67,6 +71,10 @@ export default function KanbanColumn({
           <Lock aria-hidden className="mt-0.5 size-3 shrink-0" />
           {dropBlockedReason}
         </p>
+      )}
+
+      {reviewQueueTasks.length > 0 && (
+        <KanbanReviewQueue reviewTasks={reviewQueueTasks} onOpenTask={taskActions.onOpenDetails} />
       )}
 
       <SortableContext id={column.status} items={taskIds} strategy={verticalListSortingStrategy}>
