@@ -42,6 +42,7 @@ import { EMPTY_KANBAN_TASK_FILTERS } from "@/constants/kanban-filters";
 import { KANBAN_ROLE_DEFINITIONS } from "@/constants/kanban-role-capabilities";
 import {
   findStatusOfDraggable,
+  findSubtasksOf,
   findTaskById,
   getColumnTitle,
   moveTaskToStatus,
@@ -197,12 +198,7 @@ export default function KanbanBoard() {
     [detailsTask, tasksByStatus],
   );
   const detailsSubtasks = useMemo(
-    () =>
-      detailsTask
-        ? Object.values(tasksByStatus)
-            .flat()
-            .filter((candidateTask) => candidateTask.parentTaskId === detailsTask.id)
-        : [],
+    () => (detailsTask ? findSubtasksOf(tasksByStatus, detailsTask.id) : []),
     [detailsTask, tasksByStatus],
   );
 

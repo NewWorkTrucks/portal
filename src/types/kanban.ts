@@ -82,6 +82,12 @@ export type KanbanTask = {
   completionSummary?: KanbanCompletionSummary;
 };
 
+/** How far a card's subtasks have got: Done out of all (not archived). */
+export type KanbanSubtaskProgress = {
+  doneCount: number;
+  totalCount: number;
+};
+
 export type KanbanTasksByStatus = Record<KanbanStatus, KanbanTask[]>;
 
 export type ArchivedKanbanTask = KanbanTask & {

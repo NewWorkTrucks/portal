@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, History, MessageCircle, MessageSquareText } from "lucide-react";
+import { ChevronDown, History, ListTree, MessageCircle, MessageSquareText } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useCurrentUser } from "@/components/current-user-provider";
 import KanbanOperationNoteForm from "@/components/forms/kanban-operation-note-form";
@@ -32,14 +32,29 @@ function KanbanTaskActivityEntry({
   receiptsByActivityId,
   unseenActivityIds,
   onSeen,
+  subtaskById,
+  onOpenTask,
 }: KanbanTaskActivityEntryProps) {
   const { mentionables } = useKanbanBoard();
   const { currentUser } = useCurrentUser();
 
   const { label } = AUDIT_LOG_ACTION_DISPLAY[auditLogEntry.action];
+  // Set when this entry happened on a subtask and is shown in its parent's log (US-5.2).
+  const entrySubtask = subtaskById.get(auditLogEntry.taskId);
+  const entryTask = entrySubtask ?? task;
 
   return (
     <>
+      {entrySubtask && (
+        <button
+          type="button"
+          onClick={() => onOpenTask(entrySubtask)}
+          className="flex w-fit max-w-full items-center gap-1 rounded bg-muted px-1.5 py-0.5 text-left text-xs text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring"
+        >
+          <ListTree aria-hidden className="size-3 shrink-0" />
+          <span className="min-w-0 break-words">Subtask: {entrySubtask.title}</span>
+        </button>
+      )}
       <p className="text-xs">
         <span className="font-medium">{auditLogEntry.actorName}</span>{" "}
         <span className="text-muted-foreground">
@@ -55,7 +70,7 @@ function KanbanTaskActivityEntry({
         />
       </ExpandableContent>
       <KanbanActivityFiles
-        attachments={task.attachments.filter(
+        attachments={entryTask.attachments.filter(
           (attachment) => attachment.activityId === auditLogEntry.id,
         )}
       />
@@ -86,6 +101,8 @@ function KanbanTaskActivityList({
   receiptsByActivityId,
   unseenActivityIds,
   onSeen,
+  subtaskById,
+  onOpenTask,
 }: KanbanTaskActivityListProps) {
   const { addUpdateComment, mentionables } = useKanbanBoard();
 
@@ -98,7 +115,7 @@ function KanbanTaskActivityList({
     [auditLogEntries, visibleEntryCount],
   );
   const hiddenEntryCount = auditLogEntries.length - visibleEntries.length;
-  const sharedEntryProps = { task, receiptsByActivityId, unseenActivityIds, onSeen };
+  const sharedEntryProps = { task, receiptsByActivityId, unseenActivityIds, onSeen, subtaskById, onOpenTask };
 
   function handleClickShowMore() {
     setVisibleEntryCount((currentCount) => currentCount + ACTIVITY_PAGE_SIZE);
@@ -147,7 +164,7 @@ function KanbanTaskActivityList({
                 </ol>
               )}
 
-              {commentsByUpdateId && canComment && commentingOnUpdateId !== auditLogEntry.id && (
+              {commentsByUpdateId && canComment && auditLogEntry.taskId === task.id && commentingOnUpdateId !== auditLogEntry.id && (
                 <Button
                   variant="ghost"
                   size="sm"
@@ -188,15 +205,28 @@ function KanbanTaskActivityList({
 }
 
 /** A card's written updates, opened first, with its full activity log in a second tab. */
-export default function KanbanTaskActivity({ task, isOpen }: KanbanTaskActivityProps) {
+export default function KanbanTaskActivity({ task, subtasks, isOpen, onOpenTask }: KanbanTaskActivityProps) {
   const { auditLogEntries, getTaskPermissions } = useKanbanBoard();
 
   const [activeTab, setActiveTab] = useState<KanbanTaskActivityTab>("updates");
 
+  const subtaskById = useMemo(
+    () => new Map(subtasks.map((subtask) => [subtask.id, subtask])),
+    [subtasks],
+  );
   // TODO: Load the card's activity from the backend activity-log endpoint (per-card view, E1-5).
+  // A parent's log also shows its subtasks' activity, labelled with the subtask (US-5.2).
   const taskAuditLogEntries = useMemo(
-    () => auditLogEntries.filter((auditLogEntry) => auditLogEntry.taskId === task.id),
-    [auditLogEntries, task.id],
+    () =>
+      auditLogEntries.filter(
+        (auditLogEntry) => auditLogEntry.taskId === task.id || subtaskById.has(auditLogEntry.taskId),
+      ),
+    [auditLogEntries, subtaskById, task.id],
+  );
+  // Read receipts are per card, so only this card's own entries are tracked here.
+  const ownAuditLogEntries = useMemo(
+    () => taskAuditLogEntries.filter((auditLogEntry) => auditLogEntry.taskId === task.id),
+    [task.id, taskAuditLogEntries],
   );
   const taskUpdateEntries = useMemo(
     () =>
@@ -223,7 +253,7 @@ export default function KanbanTaskActivity({ task, isOpen }: KanbanTaskActivityP
   const { receiptsByActivityId, unseenActivityIds, markSeen } = useTaskReceipts(
     task.id,
     isOpen,
-    taskAuditLogEntries,
+    ownAuditLogEntries,
   );
   // Alerts such as Stuck or a review request are moves, so they're only in All activity.
   // Comments on a listed update already show in its thread.
@@ -243,6 +273,8 @@ export default function KanbanTaskActivity({ task, isOpen }: KanbanTaskActivityP
     receiptsByActivityId,
     unseenActivityIds,
     onSeen: markSeen,
+    subtaskById,
+    onOpenTask,
   };
 
   return (

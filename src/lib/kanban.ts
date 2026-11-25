@@ -4,6 +4,7 @@ import { WORKDAY_TIME_ZONE } from "@/constants/time-zone";
 import type {
   KanbanEstimatedTurnaround,
   KanbanStatus,
+  KanbanSubtaskProgress,
   KanbanTask,
   KanbanTasksByStatus,
 } from "@/types/kanban";
@@ -53,6 +54,21 @@ export function findTaskById(
   return Object.values(tasksByStatus)
     .flat()
     .find((task) => task.id === taskId);
+}
+
+/** A card's subtasks (not archived), in board order. */
+export function findSubtasksOf(tasksByStatus: KanbanTasksByStatus, parentTaskId: string): KanbanTask[] {
+  return Object.values(tasksByStatus)
+    .flat()
+    .filter((task) => task.parentTaskId === parentTaskId);
+}
+
+/** How many of a card's subtasks are Done, for its progress (Epic 5). */
+export function getSubtaskProgress(subtasks: readonly KanbanTask[]): KanbanSubtaskProgress {
+  return {
+    doneCount: subtasks.filter((subtask) => subtask.status === "done").length,
+    totalCount: subtasks.length,
+  };
 }
 
 export function moveTaskToStatus(
@@ -171,4 +187,9 @@ const WORKDAY_ISO_DATE_FORMATTER = new Intl.DateTimeFormat("en-CA", {
 /** Today as YYYY-MM-DD in the workday time zone (US Central), for due dates and date inputs. */
 export function getTodayIsoDate(): string {
   return WORKDAY_ISO_DATE_FORMATTER.format(new Date());
+}
+
+/** The workday (YYYY-MM-DD, US Central) a timestamp falls on. */
+export function getWorkdayIsoDate(isoTimestamp: string): string {
+  return WORKDAY_ISO_DATE_FORMATTER.format(new Date(isoTimestamp));
 }
