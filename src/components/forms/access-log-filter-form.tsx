@@ -6,7 +6,7 @@ import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import type { AccessLogFilterFormProps, AccessLogFilterValues } from "@/types/access-log";
 
-/** Date range and person for the access log. The range is limited to 7 days, counting both ends. */
+/** Date range and person for the access log. Any range; the page opens on the last 7 days. */
 export default function AccessLogFilterForm({ initialValues, personNames, onSubmit }: AccessLogFilterFormProps) {
   const [filterValues, setFilterValues] = useState<AccessLogFilterValues>(initialValues);
 

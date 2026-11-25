@@ -98,7 +98,7 @@ export default function AccessLogView() {
       <header>
         <h1 className="text-xl font-semibold">Access log</h1>
         <p className="text-sm text-muted-foreground">
-          Who used the portal, from which IP address and when. Shows up to 7 days at a time (US Central).
+          Who used the portal, from which IP address and when. Opens on the last 7 days; pick any dates (US Central).
         </p>
       </header>
 

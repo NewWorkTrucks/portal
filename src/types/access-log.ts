@@ -20,7 +20,7 @@ export type AccessLogRow = {
 export type AccessLogFilterValues = {
   /** YYYY-MM-DD, US Central, included. */
   fromDate: string;
-  /** YYYY-MM-DD, US Central, included. At most 7 days after fromDate, counting both. */
+  /** YYYY-MM-DD, US Central, included. */
   toDate: string;
   /** A person's name from the results, or "" for everyone. */
   personName: string;

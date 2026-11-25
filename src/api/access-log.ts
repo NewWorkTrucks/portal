@@ -15,7 +15,7 @@ type AccessLogRpcRow = {
 
 /**
  * Access log rows for US Central dates, newest first. Only selected viewers get rows; the database
- * refuses anyone else and any range over 7 days. Returns none outside live mode.
+ * refuses anyone else. Returns none outside live mode.
  */
 export async function getAccessLogRows(fromDate: string, toDate: string): Promise<AccessLogRow[]> {
   const supabase = getSupabaseBrowserClient();
