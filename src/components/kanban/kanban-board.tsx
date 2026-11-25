@@ -171,6 +171,11 @@ export default function KanbanBoard() {
       ]),
     ) as KanbanTasksByStatus;
   }, [auditLogEntries, currentUser, isShowingOnlyMyCards, tasksByStatus, teamMembers]);
+  // US-4.2: submissions land in the assigner's Working on It; the cards themselves stay in Needs Review.
+  const tasksWaitingForCurrentUsersReview = useMemo(
+    () => tasksByStatus["needs-review"].filter((task) => task.reviewerName === currentUser.name),
+    [currentUser.name, tasksByStatus],
+  );
   // E1-6: only matching cards are shown; dragging and saving still work on the full board.
   const visibleTasksByStatus = useMemo(
     () => filterKanbanTasksByStatus(myWorkTasksByStatus, taskFilters),
@@ -599,9 +604,7 @@ export default function KanbanBoard() {
     ? getTaskReviewerName(pendingNoteOperation.task, teamMembers)
     : null;
   // US-4.3: reviews waiting on the current user are called out above the board.
-  const reviewsWaitingForCurrentUser = tasksByStatus["needs-review"].filter(
-    (task) => task.reviewerName === currentUser.name,
-  ).length;
+  const reviewsWaitingForCurrentUser = tasksWaitingForCurrentUsersReview.length;
   // G6: the edit form lists people you can assign, plus the current owner so the field still shows them.
   const editDialogOwnerOptions = teamMembers.filter(
     (teamMember) =>
@@ -720,6 +723,7 @@ export default function KanbanBoard() {
               totalTaskCount={tasksByStatus[column.status].length}
               taskActions={kanbanTaskActions}
               dropBlockedReason={getDropBlockedReason(column.status)}
+              reviewQueueTasks={column.status === "working-on-it" ? tasksWaitingForCurrentUsersReview : undefined}
             />
           ))}
         </div>
