@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { PORTAL_NAVIGATION_GROUPS } from "@/constants/portal-navigation";
+import { PORTAL_NAVIGATION_GROUPS, PORTAL_VIEWER_NAVIGATION_GROUP } from "@/constants/portal-navigation";
+import { useCanViewAccessLog } from "@/hooks/use-can-view-access-log";
 import { cn } from "@/lib/utils";
 import type { PortalNavigationLinksProps } from "@/types/portal-navigation";
 
@@ -13,10 +14,14 @@ function getIsCurrentSection(pathname: string, href: string) {
 
 export default function PortalNavigationLinks({ isCollapsed = false, onSelectLink }: PortalNavigationLinksProps) {
   const pathname = usePathname();
+  const canViewAccessLog = useCanViewAccessLog();
+  const navigationGroups = canViewAccessLog
+    ? [...PORTAL_NAVIGATION_GROUPS, PORTAL_VIEWER_NAVIGATION_GROUP]
+    : PORTAL_NAVIGATION_GROUPS;
 
   return (
     <nav aria-label="Portal" className="flex flex-col gap-5">
-      {PORTAL_NAVIGATION_GROUPS.map((navigationGroup) => (
+      {navigationGroups.map((navigationGroup) => (
         <div key={navigationGroup.label} className="flex flex-col gap-1">
           <h2 className={cn("px-2 text-xs font-medium text-muted-foreground", isCollapsed && "sr-only")}>
             {navigationGroup.label}

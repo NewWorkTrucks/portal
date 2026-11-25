@@ -44,3 +44,14 @@ export async function getAccessLogRows(fromDate: string, toDate: string): Promis
     details: accessLogRpcRow.details,
   }));
 }
+
+/** Whether the signed-in person is on the viewer list. Any failure counts as no, so the link stays hidden. */
+export async function canViewAccessLog(): Promise<boolean> {
+  const supabase = getSupabaseBrowserClient();
+  if (!supabase) {
+    return false;
+  }
+
+  const { data, error } = await supabase.rpc("access_log_can_view");
+  return !error && data === true;
+}
