@@ -19,6 +19,7 @@ import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { History, Lock, Plus } from "lucide-react";
 import Link from "next/link";
 import { Suspense, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import { useCurrentUser } from "@/components/current-user-provider";
 import { useDevicePreferences } from "@/components/device-preferences-provider";
 import { useKanbanBoard } from "@/components/kanban/kanban-board-provider";
 import { KanbanCardContent } from "@/components/kanban/kanban-card";
@@ -48,6 +49,7 @@ import {
 } from "@/lib/kanban";
 import { celebrateCardDone } from "@/lib/confetti";
 import { filterKanbanTasksByStatus } from "@/lib/kanban-filters";
+import { getTaskReviewerName } from "@/lib/kanban-permissions";
 import type { KanbanAttachment } from "@/types/attachment";
 import type { KanbanTaskFilters } from "@/types/kanban-filters";
 import type { KanbanDailyUpdate, KanbanStageTransition } from "@/types/kanban-stages";
@@ -100,6 +102,7 @@ export default function KanbanBoard() {
     getTaskPermissions,
     getMoveDeniedReason,
   } = useKanbanBoard();
+  const { currentUser } = useCurrentUser();
   const { isDoneColumnHidden, isLowSpecModeOn } = useDevicePreferences();
   const dndContextId = useId();
   const sensors = useSensors(
@@ -568,12 +571,11 @@ export default function KanbanBoard() {
     };
   }
 
-  // E2-4: reviewers are anyone whose role can review, other than the card's owner.
-  const reviewerOptions = teamMembers.filter(
-    (teamMember) =>
-      KANBAN_ROLE_DEFINITIONS[teamMember.role].capabilities.canReviewTasks &&
-      teamMember.name !== pendingNoteOperation?.task.ownerName,
-  );
+  // US-4.2: the reviewer is whoever assigned the card, never a free choice.
+  const pendingTaskReviewerName = pendingNoteOperation
+    ? getTaskReviewerName(pendingNoteOperation.task, teamMembers)
+    : null;
+  const canCreateTasks = KANBAN_ROLE_DEFINITIONS[currentUser.role].capabilities.canCreateTasks;
   const stageOperation: KanbanStageOperation | null =
     pendingNoteOperation?.kind === "move" || pendingNoteOperation?.kind === "daily-update"
       ? pendingNoteOperation
@@ -630,10 +632,12 @@ export default function KanbanBoard() {
       </header>
 
       <div className="flex flex-wrap items-center gap-2 px-4 pb-4 sm:px-6">
-        <Button data-tour="new-task" onClick={() => openTaskDialog("create", null)}>
-          <Plus aria-hidden />
-          New task
-        </Button>
+        {canCreateTasks && (
+          <Button data-tour="new-task" onClick={() => openTaskDialog("create", null)}>
+            <Plus aria-hidden />
+            New task
+          </Button>
+        )}
         {/* TODO: Temporary route. Move the audit log to its own page in the portal navigation. */}
         <Link
           href="/kanban/audit-log"
@@ -745,7 +749,7 @@ export default function KanbanBoard() {
       />
       <KanbanStageTransitionDialog
         operation={stageOperation}
-        reviewerOptions={reviewerOptions}
+        reviewerName={pendingTaskReviewerName}
         mentionables={mentionables}
         isOpen={isNoteDialogOpen && stageOperation !== null}
         onOpenChange={handleNoteDialogOpenChange}

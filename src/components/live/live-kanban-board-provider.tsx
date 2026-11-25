@@ -464,7 +464,7 @@ export default function LiveKanbanBoardProvider({ children }: LiveKanbanBoardPro
         attachFiles,
         removeAttachment,
         getTaskPermissions: (task) => getKanbanTaskPermissions(currentUser, task),
-        getMoveDeniedReason: (task, newStatus) => getTaskMoveDeniedReason(currentUser, task, newStatus),
+        getMoveDeniedReason: (task, newStatus) => getTaskMoveDeniedReason(currentUser, task, newStatus, teamMembers),
       }}
     >
       {children}

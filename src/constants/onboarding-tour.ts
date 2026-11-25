@@ -26,7 +26,7 @@ export const ONBOARDING_TOUR_STEPS: OnboardingTourStep[] = [
     target: "profile",
     title: "Your role",
     description:
-      "Your role decides what you can do. Members work on their own cards, reviewers approve work, and department heads and admins can manage every card.",
+      "Your role decides what you can do. Department heads create and assign cards and review the work they assign. Members work on the cards they're given and submit them for review.",
     side: "bottom",
   },
   {
@@ -58,7 +58,7 @@ export const ONBOARDING_TOUR_STEPS: OnboardingTourStep[] = [
     target: "board-columns",
     title: "Move cards between stages",
     description:
-      "Drag a card, or press Space and then the arrow keys. Each stage asks for what it needs, like a reviewer for Needs Review or the blocker for Stuck. Type @ in any note to mention someone.",
+      "Drag a card, or press Space and then the arrow keys. Each stage asks for what it needs, like a note for Needs Review or the blocker for Stuck. Type @ in any note to mention someone.",
     side: "top",
   },
   {
@@ -74,9 +74,9 @@ export const ONBOARDING_TOUR_STEPS: OnboardingTourStep[] = [
     target: "column-needs-review",
     title: "Review requests",
     description:
-      "Cards waiting for review land here. Approve them with a closing summary, or return them with what needs to change.",
+      "Cards you assigned land here when they're submitted. Approve them with a closing summary, or return them with what needs to change.",
     side: "right",
-    roles: ["reviewer", "department_head", "admin"],
+    roles: ["department_head", "admin"],
   },
   {
     id: "filters",

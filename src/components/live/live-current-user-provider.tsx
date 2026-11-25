@@ -99,6 +99,7 @@ export default function LiveCurrentUserProvider({ children }: LiveCurrentUserPro
           photoUrl: profile.avatar_path ? loadState.photoUrlByPath.get(profile.avatar_path) : undefined,
           mentionHandle: profile.mention_handle,
           role: currentMembership?.role ?? "member",
+          reportsToId: profile.reports_to ?? undefined,
           businessIds: profileMemberships.map((membership) => membership.business_id),
         };
       })
@@ -187,7 +188,7 @@ export default function LiveCurrentUserProvider({ children }: LiveCurrentUserPro
       }
 
       const [profilesResult, membershipsResult, businessesResult] = await Promise.all([
-        supabase.from("profiles").select("id, full_name, mention_handle, job_title, email, avatar_path"),
+        supabase.from("profiles").select("id, full_name, mention_handle, job_title, email, avatar_path, reports_to"),
         supabase.from("business_memberships").select("business_id, user_id, role"),
         supabase.from("businesses").select("id, slug, name, short_name").order("name"),
       ]);

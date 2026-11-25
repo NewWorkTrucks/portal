@@ -1,6 +1,6 @@
 import type { KanbanEstimatedTurnaround } from "@/types/kanban";
 
-/** E2-4: a reviewer must be picked, and is mentioned on the request. */
+/** US-4.2: the reviewer is the card's assigner, filled in for you, and is mentioned on the request. */
 export type KanbanReviewRequestValues = { reviewerName: string; note: string };
 
 /** E2-6 */

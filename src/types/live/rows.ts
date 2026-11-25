@@ -9,6 +9,7 @@ export type ProfileRow = {
   job_title: string;
   email: string | null;
   avatar_path: string | null;
+  reports_to: string | null;
 };
 
 export type BusinessRow = {

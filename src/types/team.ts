@@ -9,6 +9,8 @@ export type TeamMember = {
   /** Profile photo link, when they've uploaded one; initials are shown otherwise. */
   photoUrl?: string;
   role: PortalRole;
+  /** Who they report to (G3). Reviews a card they gave themselves (US-4.2). */
+  reportsToId?: string;
   /** What @mentions use; defaults to the name without spaces. */
   mentionHandle?: string;
   /** Businesses this person can see and work in (E4-2). */
