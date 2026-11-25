@@ -1,5 +1,5 @@
 /** Portal roles from the user stories (E4-1). */
-export type PortalRole = "member" | "reviewer" | "department_head" | "admin";
+export type PortalRole = "member" | "department_head" | "admin";
 
 /**
  * Task authority by role (US-3.4). Every role can move, update and submit its own cards; reviewing

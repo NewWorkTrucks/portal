@@ -12,7 +12,7 @@ import { findMondayItemOwner, formatCardCount, getUnmatchedMondayPeople } from "
 import type { MondayBoard, MondayImportFormValues } from "@/types/monday-import";
 import type { TeamMember } from "@/types/team";
 
-const REVIEWER_ROLES = ["reviewer", "department_head", "admin"];
+const REVIEWER_ROLES = ["department_head", "admin"];
 
 type MondayImportFormErrors = Partial<Record<keyof MondayImportFormValues, string>>;
 

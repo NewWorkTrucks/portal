@@ -14,17 +14,6 @@ export const KANBAN_ROLE_DEFINITIONS: Record<PortalRole, KanbanRoleDefinition> =
       canArchiveTasks: false,
     },
   },
-  reviewer: {
-    label: "Reviewer",
-    description: "Same as a member. Reviews now go to whoever assigned the card.",
-    capabilities: {
-      canCreateTasks: false,
-      canEditAnyTask: false,
-      canMoveAnyTask: false,
-      canReassignAnyTask: false,
-      canArchiveTasks: false,
-    },
-  },
   department_head: {
     label: "Department head",
     description: "Creates, edits, assigns and archives cards, and reviews the cards they assign.",
