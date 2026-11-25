@@ -7,7 +7,9 @@ import { motion, type TargetAndTransition, type Transition } from "framer-motion
 import {
   ClockAlert,
   CalendarClock,
+  CornerUpLeft,
   Eye,
+  BellRing,
   Paperclip,
   Repeat,
   CalendarDays,
@@ -106,7 +108,24 @@ export function KanbanCardContent({ task, isOverlay = false, entrance }: KanbanC
         </p>
       )}
 
-      {task.latestNote && (
+      {task.status === "needs-review" && task.reviewerName === currentUser.name && (
+        <p className="flex w-fit items-center gap-1 rounded-md bg-red-100 px-1.5 py-0.5 text-xs font-semibold text-red-900 dark:bg-red-500/20 dark:text-red-300">
+          <BellRing aria-hidden className="size-3" />
+          Needs your review
+        </p>
+      )}
+
+      {task.status === "working-on-it" && task.revisionNotes && (
+        <p className="flex gap-1.5 rounded-md bg-amber-100 px-2 py-1.5 text-xs text-amber-900 dark:bg-amber-500/15 dark:text-amber-300">
+          <CornerUpLeft aria-hidden className="mt-0.5 size-3 shrink-0" />
+          <span className="line-clamp-2">
+            <strong className="font-semibold">Returned for revisions:</strong>{" "}
+            {toPlainNoteText(task.revisionNotes)}
+          </span>
+        </p>
+      )}
+
+      {task.latestNote && task.latestNote !== task.revisionNotes && (
         <p className="flex gap-1.5 rounded-md bg-muted px-2 py-1.5 text-xs text-muted-foreground">
           <MessageSquareText aria-hidden className="mt-0.5 size-3 shrink-0" />
           <span className="line-clamp-2">

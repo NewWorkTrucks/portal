@@ -16,7 +16,7 @@ import {
   type UniqueIdentifier,
 } from "@dnd-kit/core";
 import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
-import { History, Lock, Plus } from "lucide-react";
+import { BellRing, History, Lock, Plus } from "lucide-react";
 import Link from "next/link";
 import { Suspense, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { useCurrentUser } from "@/components/current-user-provider";
@@ -252,6 +252,10 @@ export default function KanbanBoard() {
         isColumnMoveSettlingRef.current = false;
       });
     });
+  }
+
+  function handleClickShowReviews() {
+    setTaskFilters({ ...EMPTY_KANBAN_TASK_FILTERS, statuses: ["needs-review"] });
   }
 
   function resetDragState() {
@@ -575,6 +579,10 @@ export default function KanbanBoard() {
   const pendingTaskReviewerName = pendingNoteOperation
     ? getTaskReviewerName(pendingNoteOperation.task, teamMembers)
     : null;
+  // US-4.3: reviews waiting on the current user are called out above the board.
+  const reviewsWaitingForCurrentUser = tasksByStatus["needs-review"].filter(
+    (task) => task.reviewerName === currentUser.name,
+  ).length;
   const canCreateTasks = KANBAN_ROLE_DEFINITIONS[currentUser.role].capabilities.canCreateTasks;
   const stageOperation: KanbanStageOperation | null =
     pendingNoteOperation?.kind === "move" || pendingNoteOperation?.kind === "daily-update"
@@ -636,6 +644,18 @@ export default function KanbanBoard() {
           <Button data-tour="new-task" onClick={() => openTaskDialog("create", null)}>
             <Plus aria-hidden />
             New task
+          </Button>
+        )}
+        {reviewsWaitingForCurrentUser > 0 && (
+          <Button
+            variant="outline"
+            className="border-red-300 bg-red-50 text-red-900 hover:bg-red-100 dark:border-red-500/40 dark:bg-red-500/15 dark:text-red-300"
+            onClick={handleClickShowReviews}
+          >
+            <BellRing aria-hidden />
+            {reviewsWaitingForCurrentUser === 1
+              ? "1 card needs your review"
+              : `${reviewsWaitingForCurrentUser} cards need your review`}
           </Button>
         )}
         {/* TODO: Temporary route. Move the audit log to its own page in the portal navigation. */}

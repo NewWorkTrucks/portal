@@ -61,6 +61,18 @@ export function getTaskMoveDeniedReason(
   if (!taskPermissions.canMove) {
     return "You can only move your own cards.";
   }
+  // US-4.8: a card in review is approved or returned by its reviewer and goes nowhere else.
+  if (task.status === "needs-review") {
+    if (!taskPermissions.canReview) {
+      return "Only the reviewer can approve or return a card in Needs Review.";
+    }
+    return newStatus === "done" || newStatus === "working-on-it"
+      ? null
+      : `A card in ${getColumnTitle("needs-review")} is either approved (${getColumnTitle("done")}) or returned (${getColumnTitle("working-on-it")}).`;
+  }
+  if (newStatus === "needs-review" && task.status !== "working-on-it") {
+    return `Only a card in ${getColumnTitle("working-on-it")} can be submitted for review.`;
+  }
   if (newStatus === "done" && !taskPermissions.canReview) {
     // Top of the chain, on a card they gave themselves: nobody else can review it.
     if (isTaskOwner(user, task) && getTaskReviewerName(task, teamMembers) === null) {

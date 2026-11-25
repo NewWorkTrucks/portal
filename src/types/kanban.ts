@@ -68,6 +68,8 @@ export type KanbanTask = {
   dailyUpdateMissedOn?: string;
   /** Needs Review: who was asked to review (E2-4). */
   reviewerName?: string;
+  /** Working on It after a return: what the reviewer asked to change, until it is submitted again (US-4.5). */
+  revisionNotes?: string;
   /** Waiting: what, who and when contacted (E2-6). */
   waitingDetails?: KanbanWaitingDetails;
   /** Waiting: when to follow up (E2-6). */

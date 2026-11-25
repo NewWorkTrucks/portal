@@ -232,7 +232,23 @@ export default function KanbanTaskDetailsPanel({
           </dl>
         )}
 
-        {task.latestNote && (
+        {task.status === "working-on-it" && task.revisionNotes && (
+          <section aria-labelledby="task-details-revision-notes" className="flex flex-col gap-1.5">
+            <h3 id="task-details-revision-notes" className="text-xs font-medium text-amber-800 dark:text-amber-300">
+              Returned for revisions
+            </h3>
+            <ExpandableContent collapsedHeightRem={7} className="rounded-md bg-amber-100 px-3 py-2 dark:bg-amber-500/15">
+              <RichNoteText
+                note={task.revisionNotes}
+                mentionables={mentionables}
+                currentUserName={currentUser.name}
+                className="text-sm"
+              />
+            </ExpandableContent>
+          </section>
+        )}
+
+        {task.latestNote && task.latestNote !== task.revisionNotes && (
           <section aria-labelledby="task-details-latest-note" className="flex flex-col gap-1.5">
             <h3 id="task-details-latest-note" className="text-xs text-muted-foreground">
               Latest note

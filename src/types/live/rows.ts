@@ -44,6 +44,7 @@ export type KanbanTaskRow = {
   last_daily_update_at: string | null;
   daily_update_missed_on: string | null;
   reviewer_id: string | null;
+  revision_notes: string | null;
   waiting_on_what: string | null;
   waiting_on_who: string | null;
   contacted_date: string | null;

@@ -79,26 +79,34 @@ export default function KanbanCardActionsDialog({
   }
 
   function renderStatusView(selectedTask: KanbanTask) {
+    // US-4.8: only the moves this person can make are listed.
+    const selectableColumns = KANBAN_COLUMNS.filter(
+      (column) => column.status === selectedTask.status || getMoveDeniedReason(selectedTask, column.status) === null,
+    );
+    const firstDeniedReason =
+      selectableColumns.length === 1
+        ? KANBAN_COLUMNS.map((column) => getMoveDeniedReason(selectedTask, column.status)).find(Boolean)
+        : null;
+
     return (
       <div className="flex flex-col gap-1">
         {renderBackButton()}
-        {KANBAN_COLUMNS.map((column) => {
+        {firstDeniedReason && <p className="px-2 py-1 text-sm text-muted-foreground">{firstDeniedReason}</p>}
+        {selectableColumns.map((column) => {
           const isCurrentStatus = column.status === selectedTask.status;
-          const moveDeniedReason = isCurrentStatus ? null : getMoveDeniedReason(selectedTask, column.status);
 
           return (
             <Button
               key={column.status}
               variant="ghost"
               className={ACTION_ROW_CLASS_NAME}
-              disabled={isCurrentStatus || moveDeniedReason !== null}
+              disabled={isCurrentStatus}
               aria-current={isCurrentStatus ? "true" : undefined}
               onClick={() => handleSelectStatus(column.status)}
             >
               <span aria-hidden className={cn("size-2.5 shrink-0 rounded-full", column.accentClassName)} />
               <span className="flex min-w-0 flex-1 flex-col">
                 <span>{column.title}</span>
-                {moveDeniedReason && <span className="text-xs text-muted-foreground">{moveDeniedReason}</span>}
               </span>
               {isCurrentStatus && (
                 <span className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground">

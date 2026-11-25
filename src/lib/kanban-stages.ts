@@ -60,6 +60,18 @@ export function getStageTaskChanges(
   task: KanbanTask,
   transition: KanbanStageTransition,
 ): Partial<KanbanTask> {
+  return { ...getStageDetailChanges(task, transition), revisionNotes: getRevisionNotes(task, transition) };
+}
+
+/** A returned card keeps the reviewer's notes until it is submitted again or finished (US-4.5). */
+function getRevisionNotes(task: KanbanTask, transition: KanbanStageTransition): string | undefined {
+  if (task.status === "needs-review" && transition.status === "working-on-it") {
+    return transition.note;
+  }
+  return transition.status === "needs-review" || transition.status === "done" ? undefined : task.revisionNotes;
+}
+
+function getStageDetailChanges(task: KanbanTask, transition: KanbanStageTransition): Partial<KanbanTask> {
   const clearedStageFields: Partial<KanbanTask> = {
     reviewerName: undefined,
     waitingDetails: undefined,
