@@ -43,6 +43,7 @@ import {
   getStageAutoMentionHandles,
   getStageTaskChanges,
 } from "@/lib/kanban-stages";
+import { useBoardBusinesses } from "@/hooks/use-board-businesses";
 import { buildMentionables, resolveMentionedNames } from "@/lib/mentions";
 import type { KanbanAttachment } from "@/types/attachment";
 import type { KanbanAuditLogAction, KanbanAuditLogEntry } from "@/types/audit-log";
@@ -82,6 +83,7 @@ export function KanbanBoardProvider({ initialTasks, children }: KanbanBoardProvi
     isSimulatingUser,
     currentBusiness,
   } = useCurrentUser();
+  const boardBusinesses = useBoardBusinesses();
 
   const [tasksByStatus, setTasksByStatus] = useState<KanbanTasksByStatus>(() =>
     groupTasksByStatus(initialTasks),
@@ -90,12 +92,20 @@ export function KanbanBoardProvider({ initialTasks, children }: KanbanBoardProvi
   // TODO: Load from and persist to the backend activity log (append-only) instead of memory.
   const [auditLogEntries, setAuditLogEntries] = useState<readonly KanbanAuditLogEntry[]>([]);
 
-  // E4-2: everything below is scoped to the current business. Other businesses' cards stay in
-  // state (like rows in a shared table) but are never shown or changed from here.
+  // E4-2: everything below is scoped to the board's businesses: the current one, or all of yours
+  // under "All businesses" (G13). Other businesses' cards stay in state (like rows in a shared
+  // table) but are never shown or changed from here.
   // TODO: The backend must enforce this with business_id and RLS; this is a client-side mock.
+  const boardBusinessIds = useMemo(
+    () => new Set(boardBusinesses.map((boardBusiness) => boardBusiness.id)),
+    [boardBusinesses],
+  );
   const teamMembers = useMemo(
-    () => allTeamMembers.filter((teamMember) => teamMember.businessIds.includes(currentBusiness.id)),
-    [allTeamMembers, currentBusiness.id],
+    () =>
+      allTeamMembers.filter((teamMember) =>
+        teamMember.businessIds.some((businessId) => boardBusinessIds.has(businessId)),
+      ),
+    [allTeamMembers, boardBusinessIds],
   );
   const assignableTeamMembers = useMemo(
     () => getAssignableTeamMembers(currentUser, teamMembers, allTeamMembers),
@@ -106,18 +116,18 @@ export function KanbanBoardProvider({ initialTasks, children }: KanbanBoardProvi
       Object.fromEntries(
         Object.entries(tasksByStatus).map(([status, tasks]) => [
           status,
-          tasks.filter((task) => task.businessId === currentBusiness.id),
+          tasks.filter((task) => boardBusinessIds.has(task.businessId)),
         ]),
       ) as KanbanTasksByStatus,
-    [tasksByStatus, currentBusiness.id],
+    [tasksByStatus, boardBusinessIds],
   );
   const businessArchivedTasks = useMemo(
-    () => archivedTasks.filter((task) => task.businessId === currentBusiness.id),
-    [archivedTasks, currentBusiness.id],
+    () => archivedTasks.filter((task) => boardBusinessIds.has(task.businessId)),
+    [archivedTasks, boardBusinessIds],
   );
   const businessAuditLogEntries = useMemo(
-    () => auditLogEntries.filter((entry) => entry.businessId === currentBusiness.id),
-    [auditLogEntries, currentBusiness.id],
+    () => auditLogEntries.filter((entry) => boardBusinessIds.has(entry.businessId)),
+    [auditLogEntries, boardBusinessIds],
   );
 
   const mentionables = useMemo(
@@ -204,7 +214,7 @@ export function KanbanBoardProvider({ initialTasks, children }: KanbanBoardProvi
 
   function assertTaskInCurrentBusiness(task: Pick<KanbanTask, "businessId">) {
     assertKanbanPermission(
-      task.businessId === currentBusiness.id,
+      boardBusinessIds.has(task.businessId),
       `This card belongs to another business and can't be changed from ${currentBusiness.shortName}.`,
     );
   }

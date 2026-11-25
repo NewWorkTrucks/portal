@@ -2,6 +2,8 @@
 
 import { createContext, type ReactNode, useContext, useEffect, useState } from "react";
 import {
+  BOARD_BUSINESS_SCOPE_STORAGE_KEY,
+  BOARD_CARD_SCOPE_STORAGE_KEY,
   DEFAULT_BUSINESS_STORAGE_KEY,
   DONE_COLUMN_HIDDEN_STORAGE_KEY,
   LOW_SPEC_MODE_ATTRIBUTE,
@@ -9,7 +11,12 @@ import {
   REDUCED_MOTION_QUERY,
 } from "@/constants/device-preferences";
 import { readStoredValue, writeStoredValue } from "@/lib/browser-storage";
-import type { DevicePreferences, DevicePreferencesContextValue } from "@/types/device-preferences";
+import type {
+  BoardBusinessScope,
+  BoardCardScope,
+  DevicePreferences,
+  DevicePreferencesContextValue,
+} from "@/types/device-preferences";
 
 const DevicePreferencesContext = createContext<DevicePreferencesContextValue | null>(null);
 
@@ -17,6 +24,8 @@ const DEFAULT_DEVICE_PREFERENCES: DevicePreferences = {
   isLowSpecModeOn: false,
   isDoneColumnHidden: false,
   defaultBusinessId: null,
+  boardCardScope: "all",
+  boardBusinessScope: "current",
 };
 
 function readStoredBoolean(storageKey: string, fallback: boolean): boolean {
@@ -59,6 +68,14 @@ export function DevicePreferencesProvider({ children }: DevicePreferencesProvide
     updateDevicePreference("defaultBusinessId", defaultBusinessId, DEFAULT_BUSINESS_STORAGE_KEY);
   }
 
+  function setBoardCardScope(boardCardScope: BoardCardScope) {
+    updateDevicePreference("boardCardScope", boardCardScope, BOARD_CARD_SCOPE_STORAGE_KEY);
+  }
+
+  function setBoardBusinessScope(boardBusinessScope: BoardBusinessScope) {
+    updateDevicePreference("boardBusinessScope", boardBusinessScope, BOARD_BUSINESS_SCOPE_STORAGE_KEY);
+  }
+
   useEffect(() => {
     // One-time read of browser-only storage. Low spec mode starts on when the system asks for
     // reduced motion, until the person picks for themselves.
@@ -72,6 +89,8 @@ export function DevicePreferencesProvider({ children }: DevicePreferencesProvide
       isLowSpecModeOn: isStoredLowSpecModeOn,
       isDoneColumnHidden: readStoredBoolean(DONE_COLUMN_HIDDEN_STORAGE_KEY, false),
       defaultBusinessId: readStoredValue(DEFAULT_BUSINESS_STORAGE_KEY) || null,
+      boardCardScope: readStoredValue(BOARD_CARD_SCOPE_STORAGE_KEY) === "mine" ? "mine" : "all",
+      boardBusinessScope: readStoredValue(BOARD_BUSINESS_SCOPE_STORAGE_KEY) === "all" ? "all" : "current",
     });
   }, []);
 
@@ -82,6 +101,8 @@ export function DevicePreferencesProvider({ children }: DevicePreferencesProvide
         setLowSpecMode,
         setDoneColumnHidden,
         setDefaultBusinessId,
+        setBoardCardScope,
+        setBoardBusinessScope,
       }}
     >
       {children}

@@ -13,6 +13,8 @@ export type KanbanRoleCapabilities = {
   canMoveAnyTask: boolean;
   canReassignAnyTask: boolean;
   canArchiveTasks: boolean;
+  /** See every card in their businesses, and pick "All cards" or "All businesses" (G13, US-3.6). */
+  canViewAllCards: boolean;
 };
 
 export type KanbanRoleDefinition = {

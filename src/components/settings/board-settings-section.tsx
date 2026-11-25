@@ -10,12 +10,24 @@ import SettingsSection from "@/components/settings/settings-section";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { BOARD_BUSINESS_SCOPE_OPTIONS, BOARD_CARD_SCOPE_OPTIONS } from "@/constants/board-scope";
+import { KANBAN_ROLE_DEFINITIONS } from "@/constants/kanban-role-capabilities";
+import type { BoardBusinessScope, BoardCardScope } from "@/types/device-preferences";
 
 const FIRST_BUSINESS_VALUE = "first";
 
 export default function BoardSettingsSection() {
-  const { signedInUser, availableBusinesses, currentBusiness } = useCurrentUser();
-  const { isDoneColumnHidden, defaultBusinessId, setDoneColumnHidden, setDefaultBusinessId } = useDevicePreferences();
+  const { signedInUser, currentUser, availableBusinesses, currentBusiness } = useCurrentUser();
+  const {
+    isDoneColumnHidden,
+    defaultBusinessId,
+    boardCardScope,
+    boardBusinessScope,
+    setDoneColumnHidden,
+    setDefaultBusinessId,
+    setBoardCardScope,
+    setBoardBusinessScope,
+  } = useDevicePreferences();
   const { requestTour } = useOnboardingTour();
 
   const signedInUserBusinesses = availableBusinesses.filter((business) =>
@@ -29,8 +41,23 @@ export default function BoardSettingsSection() {
     ? (defaultBusinessId as string)
     : FIRST_BUSINESS_VALUE;
 
+  // G13: only heads and admins can widen the board; members always see their own cards.
+  const canViewAllCards = KANBAN_ROLE_DEFINITIONS[currentUser.role].capabilities.canViewAllCards;
+
   function handleChangeDefaultBusiness(selectedValue: string | null) {
     setDefaultBusinessId(!selectedValue || selectedValue === FIRST_BUSINESS_VALUE ? null : selectedValue);
+  }
+
+  function handleChangeCardScope(selectedValue: BoardCardScope | null) {
+    if (selectedValue) {
+      setBoardCardScope(selectedValue);
+    }
+  }
+
+  function handleChangeBusinessScope(selectedValue: BoardBusinessScope | null) {
+    if (selectedValue) {
+      setBoardBusinessScope(selectedValue);
+    }
   }
 
   return (
@@ -60,6 +87,54 @@ export default function BoardSettingsSection() {
               </SelectContent>
             </Select>
           </SettingsRow>
+        )}
+
+        {canViewAllCards && (
+          <>
+            <SettingsRow
+              controlId="settings-board-card-scope"
+              label="Cards"
+              description="Show only the cards you own, gave out or review, or everyone's cards."
+            >
+              <Select items={BOARD_CARD_SCOPE_OPTIONS} value={boardCardScope} onValueChange={handleChangeCardScope}>
+                <SelectTrigger id="settings-board-card-scope" className="w-48">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {BOARD_CARD_SCOPE_OPTIONS.map((cardScopeOption) => (
+                    <SelectItem key={cardScopeOption.value} value={cardScopeOption.value}>
+                      <cardScopeOption.Icon aria-hidden />
+                      {cardScopeOption.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </SettingsRow>
+
+            <SettingsRow
+              controlId="settings-board-business-scope"
+              label="Businesses"
+              description="Show the business picked in the header, or all of yours with each card tagged by business."
+            >
+              <Select
+                items={BOARD_BUSINESS_SCOPE_OPTIONS}
+                value={boardBusinessScope}
+                onValueChange={handleChangeBusinessScope}
+              >
+                <SelectTrigger id="settings-board-business-scope" className="w-48">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {BOARD_BUSINESS_SCOPE_OPTIONS.map((businessScopeOption) => (
+                    <SelectItem key={businessScopeOption.value} value={businessScopeOption.value}>
+                      <businessScopeOption.Icon aria-hidden />
+                      {businessScopeOption.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </SettingsRow>
+          </>
         )}
 
         <SettingsRow

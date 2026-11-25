@@ -12,6 +12,7 @@ export const KANBAN_ROLE_DEFINITIONS: Record<PortalRole, KanbanRoleDefinition> =
       canMoveAnyTask: false,
       canReassignAnyTask: false,
       canArchiveTasks: false,
+      canViewAllCards: false,
     },
   },
   department_head: {
@@ -23,6 +24,7 @@ export const KANBAN_ROLE_DEFINITIONS: Record<PortalRole, KanbanRoleDefinition> =
       canMoveAnyTask: true,
       canReassignAnyTask: true,
       canArchiveTasks: true,
+      canViewAllCards: true,
     },
   },
   admin: {
@@ -34,6 +36,7 @@ export const KANBAN_ROLE_DEFINITIONS: Record<PortalRole, KanbanRoleDefinition> =
       canMoveAnyTask: true,
       canReassignAnyTask: true,
       canArchiveTasks: true,
+      canViewAllCards: true,
     },
   },
 };

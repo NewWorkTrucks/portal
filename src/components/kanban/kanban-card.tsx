@@ -26,6 +26,7 @@ import MentionText from "@/components/mention-text";
 import { toPlainNoteText } from "@/lib/rich-note";
 import UserAvatar from "@/components/user-avatar";
 import { KANBAN_PRIORITY_BADGE_CLASS_NAMES } from "@/constants/kanban-task-priorities";
+import { useBoardBusinesses } from "@/hooks/use-board-businesses";
 import { cn } from "@/lib/utils";
 import { findSubtasksOf, formatEstimatedTurnaround, formatKanbanDate, getSubtaskProgress } from "@/lib/kanban";
 import type { KanbanTask, KanbanTaskActions } from "@/types/kanban";
@@ -60,7 +61,13 @@ export function KanbanCardContent({ task, isOverlay = false, entrance }: KanbanC
   const { mentionables, tasksByStatus } = useKanbanBoard();
   const { currentUser } = useCurrentUser();
   const { isLowSpecModeOn } = useDevicePreferences();
+  const boardBusinesses = useBoardBusinesses();
 
+  // Tagged only when the board mixes businesses ("All businesses", G13).
+  const taskBusiness =
+    boardBusinesses.length > 1
+      ? boardBusinesses.find((boardBusiness) => boardBusiness.id === task.businessId)
+      : undefined;
   const subtaskProgress = useMemo(
     () => (task.parentTaskId ? null : getSubtaskProgress(findSubtasksOf(tasksByStatus, task.id))),
     [task.id, task.parentTaskId, tasksByStatus],
@@ -83,11 +90,23 @@ export function KanbanCardContent({ task, isOverlay = false, entrance }: KanbanC
       className={cn(
         entrance && "board-enter-card",
         "relative flex flex-col gap-3 rounded-lg border bg-card p-3 text-card-foreground shadow-xs",
+        // Room for the business tag on the top border, so the column's scroll edge doesn't clip it.
+        taskBusiness && "mt-2.5",
         // No rotate/scale here: transforms skew the overlay's measured rect and break keyboard moves.
         isOverlay && "cursor-grabbing shadow-lg ring-2 ring-primary/40",
         hasHoverEffect && "transition-[box-shadow,border-color] duration-200 hover:border-primary/40 hover:shadow-md",
       )}
     >
+      {taskBusiness && (
+        <span
+          title={taskBusiness.name}
+          className="absolute -top-2.5 left-3 rounded-full border bg-card px-2 text-[10px] leading-4 font-semibold tracking-wide text-muted-foreground uppercase"
+        >
+          <span className="sr-only">Business: </span>
+          {taskBusiness.shortName}
+        </span>
+      )}
+
       <header className="flex items-start justify-between gap-2">
         <h3 className="text-sm leading-snug font-medium">{task.title}</h3>
         <span
