@@ -55,3 +55,20 @@ export async function canViewAccessLog(): Promise<boolean> {
   const { data, error } = await supabase.rpc("access_log_can_view");
   return !error && data === true;
 }
+
+/**
+ * Records an in-app page change for the signed-in person (US-9.3). The database takes the person
+ * from the session and the IP from the request. Never throws: a failed record is logged to the
+ * console and the page carries on, so the access log can't get in anyone's way.
+ */
+export async function recordPageVisit(path: string): Promise<void> {
+  const supabase = getSupabaseBrowserClient();
+  if (!supabase) {
+    return;
+  }
+
+  const { error } = await supabase.rpc("access_log_record_visit", { p_path: path });
+  if (error) {
+    console.error(`Access log visit not recorded: ${error.code} ${error.message}`);
+  }
+}

@@ -13,19 +13,16 @@ const PUBLIC_PATH_PREFIXES = ["/login", "/auth/", "/robots.txt", WEB_BROWSER_ONL
 
 /**
  * Runs before every page. Phones get the web-browser notice (US-9.1) before anything else. In live
- * mode it logs each page visit (a full load or an in-app page change) with the visitor's IP, user and
- * time (US-9.3), then keeps the Supabase session cookie fresh and sends signed-out visitors to /login. Mock mode and setups without Supabase
- * settings skip the sign-in and logging. Data access itself is enforced by RLS.
+ * mode it logs each full page load with the visitor's IP, user and time (US-9.3; in-app page changes
+ * are recorded by AccessLogVisitRecorder), then keeps the Supabase session cookie fresh and sends
+ * signed-out visitors to /login. Mock mode and setups without Supabase settings skip the sign-in and logging. Data access itself is enforced by RLS.
  */
 export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const userAgent = request.headers.get("user-agent") ?? "";
-  // A visit is a full page load or an in-app page change (Next.js sends "rsc" for those). Prefetches
-  // and assets are skipped: they would flood the log without anyone opening a page.
-  const isPrefetch =
-    request.headers.has("next-router-prefetch") || request.headers.has("next-router-segment-prefetch");
-  const isPageLoad =
-    !isPrefetch && (request.headers.get("sec-fetch-dest") === "document" || request.headers.has("rsc"));
+  // Full page loads only. Next.js strips its navigation headers before the proxy runs, so in-app page
+  // changes can't be told apart from prefetches here; AccessLogVisitRecorder records those instead.
+  const isPageLoad = request.headers.get("sec-fetch-dest") === "document";
   const supabaseConfig = getSupabaseConfig();
   const isLiveMode = DEFAULT_DATA_MODE === "live" && supabaseConfig !== null;
   let response = NextResponse.next({ request });
