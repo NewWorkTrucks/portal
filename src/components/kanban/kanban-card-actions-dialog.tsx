@@ -25,7 +25,6 @@ import { KANBAN_ROLE_DEFINITIONS } from "@/constants/kanban-role-capabilities";
 import { getColumnTitle } from "@/lib/kanban";
 import { cn } from "@/lib/utils";
 import type { KanbanCardActionsView, KanbanStatus, KanbanTask, KanbanTaskActions } from "@/types/kanban";
-import type { TeamMember } from "@/types/team";
 
 // At least 44 px tall, so every row is comfortable to tap.
 const ACTION_ROW_CLASS_NAME =
@@ -34,7 +33,6 @@ const ACTION_ROW_CLASS_NAME =
 type KanbanCardActionsDialogProps = {
   /** Kept after the dialog closes so its content doesn't vanish during the exit animation. */
   task: KanbanTask | null;
-  teamMembers: TeamMember[];
   taskActions: KanbanTaskActions;
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
@@ -43,12 +41,11 @@ type KanbanCardActionsDialogProps = {
 /** The card menu opened by holding a card on touch screens, or from a list row's actions button. */
 export default function KanbanCardActionsDialog({
   task,
-  teamMembers,
   taskActions,
   isOpen,
   onOpenChange,
 }: KanbanCardActionsDialogProps) {
-  const { getTaskPermissions, getMoveDeniedReason } = useKanbanBoard();
+  const { getTaskPermissions, getMoveDeniedReason, assignableTeamMembers } = useKanbanBoard();
   const { currentUser } = useCurrentUser();
 
   const [activeView, setActiveView] = useState<KanbanCardActionsView>("actions");
@@ -125,7 +122,7 @@ export default function KanbanCardActionsDialog({
     return (
       <div className="flex flex-col gap-1">
         {renderBackButton()}
-        {teamMembers.map((teamMember) => {
+        {assignableTeamMembers.map((teamMember) => {
           const isCurrentOwner = teamMember.name === selectedTask.ownerName;
 
           return (

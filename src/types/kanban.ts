@@ -164,7 +164,6 @@ export type KanbanViewSwitcherProps = {
 
 export type KanbanTaskMenuProps = {
   task: KanbanTask;
-  teamMembers: TeamMember[];
   taskActions: KanbanTaskActions;
 };
 
@@ -172,7 +171,6 @@ export type KanbanTaskListProps = {
   tasks: KanbanTask[];
   /** Cards before filtering, to tell "no matches" apart from an empty board. */
   totalTaskCount: number;
-  teamMembers: TeamMember[];
   taskActions: KanbanTaskActions;
 };
 
@@ -212,6 +210,8 @@ export type KanbanBoardContextValue = {
   addUpdateComment: (task: KanbanTask, parentActivityId: string, note: string) => Promise<void>;
   attachFiles: (task: KanbanTask, files: File[], note: string) => Promise<void>;
   removeAttachment: (task: KanbanTask, attachment: KanbanAttachment, note: string) => Promise<void>;
+  /** Who the current user may give cards to: themselves and anyone who reports to them (G6). */
+  assignableTeamMembers: TeamMember[];
   /** What the current user may do with a card, based on their role and ownership (E4-1). */
   getTaskPermissions: (task: KanbanTask) => KanbanTaskPermissions;
   /** Why the current user may not move `task` to `newStatus`, or null if allowed. */

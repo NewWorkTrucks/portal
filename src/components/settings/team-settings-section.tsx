@@ -7,7 +7,8 @@ import UserAvatar from "@/components/user-avatar";
 import { KANBAN_ROLE_DEFINITIONS } from "@/constants/kanban-role-capabilities";
 
 /**
- * Admins only: who is in the current business and their roles. Read-only for now.
+ * Admins only: who is in the current business, their roles and who they report to (G3). Read-only
+ * for now; the reporting chain is set with `yarn update-user <email> --reports-to <manager email>`.
  * TODO: Role changes, mention groups and invites, once those are built (see the settings roadmap).
  */
 export default function TeamSettingsSection() {
@@ -32,6 +33,9 @@ export default function TeamSettingsSection() {
               <span className="truncate text-sm font-medium">{teamMember.name}</span>
               <span className="truncate text-xs text-muted-foreground">
                 {[teamMember.jobTitle, teamMember.email].filter(Boolean).join(" · ") || "No job title"}
+              </span>
+              <span className="truncate text-xs text-muted-foreground">
+                Reports to {teamMembers.find((manager) => manager.id === teamMember.reportsToId)?.name ?? "nobody yet"}
               </span>
             </div>
             <Badge variant="secondary" title={KANBAN_ROLE_DEFINITIONS[teamMember.role].description}>

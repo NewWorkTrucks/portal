@@ -7,14 +7,12 @@ import { type CSSProperties, useMemo } from "react";
 import KanbanCard from "@/components/kanban/kanban-card";
 import { cn } from "@/lib/utils";
 import type { KanbanColumnDefinition, KanbanTask, KanbanTaskActions } from "@/types/kanban";
-import type { TeamMember } from "@/types/team";
 
 type KanbanColumnProps = {
   column: KanbanColumnDefinition;
   tasks: KanbanTask[];
   /** Cards in this column before filtering, to show "2 of 5" while filters are on. */
   totalTaskCount: number;
-  teamMembers: TeamMember[];
   taskActions: KanbanTaskActions;
   /** Set while dragging a card the current user may not move into this column. */
   dropBlockedReason?: string | null;
@@ -29,7 +27,6 @@ export default function KanbanColumn({
   column,
   tasks,
   totalTaskCount,
-  teamMembers,
   taskActions,
   dropBlockedReason,
   entranceColumnIndex,
@@ -78,7 +75,6 @@ export default function KanbanColumn({
             <KanbanCard
               key={task.id}
               task={task}
-              teamMembers={teamMembers}
               taskActions={taskActions}
               entrance={
                 isEntering

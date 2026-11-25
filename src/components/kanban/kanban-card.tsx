@@ -29,7 +29,6 @@ import { cn } from "@/lib/utils";
 import { formatEstimatedTurnaround, formatKanbanDate } from "@/lib/kanban";
 import type { KanbanTask, KanbanTaskActions } from "@/types/kanban";
 import type { KanbanEntrance } from "@/types/kanban-entrance";
-import type { TeamMember } from "@/types/team";
 
 // A pointer that moves further than this between press and release was a drag, not a click.
 const CLICK_MOVEMENT_TOLERANCE_PX = 5;
@@ -40,7 +39,6 @@ const RELEASE_CLICK_WINDOW_MS = 350;
 
 type KanbanCardProps = {
   task: KanbanTask;
-  teamMembers: TeamMember[];
   taskActions: KanbanTaskActions;
   /** Set during the board's first-load entrance, so the card fades in after its stage. */
   entrance?: KanbanEntrance;
@@ -196,7 +194,7 @@ export function KanbanCardContent({ task, isOverlay = false, entrance }: KanbanC
   );
 }
 
-export default function KanbanCard({ task, teamMembers, taskActions, entrance }: KanbanCardProps) {
+export default function KanbanCard({ task, taskActions, entrance }: KanbanCardProps) {
   const { getTaskPermissions } = useKanbanBoard();
   const taskPermissions = getTaskPermissions(task);
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -349,7 +347,7 @@ export default function KanbanCard({ task, teamMembers, taskActions, entrance }:
         <KanbanCardContent task={task} entrance={entrance} />
       </ContextMenuTrigger>
 
-      <KanbanTaskContextMenuContent task={task} teamMembers={teamMembers} taskActions={taskActions} />
+      <KanbanTaskContextMenuContent task={task} taskActions={taskActions} />
     </ContextMenu>
   );
 }

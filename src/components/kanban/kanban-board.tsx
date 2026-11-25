@@ -99,6 +99,7 @@ export default function KanbanBoard() {
     addTaskUpdate,
     attachFiles,
     removeAttachment,
+    assignableTeamMembers,
     getTaskPermissions,
     getMoveDeniedReason,
   } = useKanbanBoard();
@@ -583,6 +584,11 @@ export default function KanbanBoard() {
   const reviewsWaitingForCurrentUser = tasksByStatus["needs-review"].filter(
     (task) => task.reviewerName === currentUser.name,
   ).length;
+  // G6: the edit form lists people you can assign, plus the current owner so the field still shows them.
+  const editDialogOwnerOptions = teamMembers.filter(
+    (teamMember) =>
+      assignableTeamMembers.includes(teamMember) || teamMember.name === dialogTask?.ownerName,
+  );
   const canCreateTasks = KANBAN_ROLE_DEFINITIONS[currentUser.role].capabilities.canCreateTasks;
   const stageOperation: KanbanStageOperation | null =
     pendingNoteOperation?.kind === "move" || pendingNoteOperation?.kind === "daily-update"
@@ -694,7 +700,6 @@ export default function KanbanBoard() {
               column={column}
               tasks={visibleTasksByStatus[column.status]}
               totalTaskCount={tasksByStatus[column.status].length}
-              teamMembers={teamMembers}
               taskActions={kanbanTaskActions}
               dropBlockedReason={getDropBlockedReason(column.status)}
             />
@@ -704,7 +709,6 @@ export default function KanbanBoard() {
         <KanbanTaskList
           tasks={visibleListTasks}
           totalTaskCount={totalTaskCount}
-          teamMembers={teamMembers}
           taskActions={kanbanTaskActions}
         />
       )}
@@ -719,14 +723,12 @@ export default function KanbanBoard() {
 
       <KanbanCardActionsDialog
         task={cardActionsTask}
-        teamMembers={teamMembers}
         taskActions={kanbanTaskActions}
         isOpen={isCardActionsDialogOpen && cardActionsTask !== null}
         onOpenChange={setIsCardActionsDialogOpen}
       />
       <KanbanTaskDetailsPanel
         task={detailsTask}
-        teamMembers={teamMembers}
         taskActions={detailsPanelTaskActions}
         parentTask={detailsParentTask}
         subtasks={detailsSubtasks}
@@ -738,7 +740,7 @@ export default function KanbanBoard() {
       <KanbanTaskCreateDialog
         parentTask={dialogTask}
         mentionables={mentionables}
-        teamMembers={teamMembers}
+        teamMembers={assignableTeamMembers}
         isOpen={openDialogKind === "create"}
         onOpenChange={handleDialogOpenChange}
         onSubmit={handleSubmitCreateTask}
@@ -747,7 +749,7 @@ export default function KanbanBoard() {
         mentionables={mentionables}
         canChangeOwner={dialogTask ? getTaskPermissions(dialogTask).canChangeOwner : false}
         task={dialogTask}
-        teamMembers={teamMembers}
+        teamMembers={editDialogOwnerOptions}
         isOpen={openDialogKind === "edit"}
         onOpenChange={handleDialogOpenChange}
         onSubmit={handleSubmitEditTask}
